@@ -1,0 +1,29 @@
+<config>
+    <jars>
+        <jar in="../../target/entity.queryable-1.0.0-SNAPSHOT.jar" out="../../target/entity.queryable-1.0.0-SNAPSHOT.jar"/>
+    </jars>
+
+    <keep-names>
+        <class access="private+">
+            <field access="private+"/>
+            <method access="private+"/>
+        </class>
+    </keep-names>
+    <ignore-classes>
+        <class template="class \*springframework\*"/>
+        <class template="class \*shardingjdbc\*"/>
+        <class template="class \*jni\*"/>
+        <class template="class \*alibaba\*"/>
+        <class template="class \*persistence\*"/>
+        <class template="class \*apache\*"/>
+        <class template="class \*mybatis\*"/>
+        <class template="class com.apache.*"/>
+        <class template="class org.apache.http.entity.StringEntity"/>
+        <class template="class org.apache.cxf.*"/>
+        <class template="class entity.query.annotation" />
+        <class template="class entity.query.core.enums*" />
+        <class template="class entity.query.core.*" />
+        <class template="class entity.query.tool.*" />
+    </ignore-classes>
+    <property name="log-file" value="../logs/log.xml"/>
+</config>
