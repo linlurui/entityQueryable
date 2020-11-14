@@ -178,7 +178,7 @@
 					<message >Maven artifacts for ${project.version}</message>
 					<noJekyll>true</noJekyll>
 					<outputDirectory>${project.build.directory}/entityQueryable</outputDirectory><!--本地jar地址-->
-					<branch>refs/heads/1.0</branch><!--分支的名称-->
+					<branch>refs/heads/SNAPSHOT1.0</branch><!--分支的名称-->
 					<merge>true</merge>
 					<includes>
 						<include>**/*</include>
