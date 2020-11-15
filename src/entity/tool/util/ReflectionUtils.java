@@ -12,11 +12,13 @@ package entity.tool.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
 
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 import com.esotericsoftware.reflectasm.MethodAccess;
+import entity.query.Datetime;
 import entity.query.annotation.Fieldname;
 import entity.query.core.ApplicationConfig;
 
@@ -164,8 +166,9 @@ public class ReflectionUtils {
 
         if(value != null) {
             boolean hasValue = false;
+
             try{
-                if(!clazz.getDeclaredField(fieldname).getGenericType().equals(value.getClass())) {
+                if(!hasValue && !clazz.getDeclaredField(fieldname).getGenericType().equals(value.getClass())) {
                     value = StringUtils.cast(clazz.getDeclaredField(fieldname).getGenericType(), value.toString());
                     hasValue = true;
                 }
@@ -175,7 +178,12 @@ public class ReflectionUtils {
             if(!hasValue) {
                 try {
                     if (clazz.getMethod(method, value.getClass()) != null) {
-                        value = StringUtils.cast(value.getClass(), value.toString());
+                        if(Date.class.equals(value.getClass())) {
+                            value = StringUtils.cast(value.getClass(), Long.valueOf(((Date) value).getTime()).toString());
+                        }
+                        else {
+                            value = StringUtils.cast(value.getClass(), value.toString());
+                        }
                         hasValue = true;
                     }
                 } catch (Exception e) {}
