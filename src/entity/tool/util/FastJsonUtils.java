@@ -36,7 +36,7 @@ public class FastJsonUtils {
             SerializerFeature.WriteNullStringAsEmpty // 字符类型字段如果为null，输出为""，而不是null
     };
 
-    public static String convertObjectToJSON(Object object) {
+    public static String toJson(Object object) {
 
         if(object == null) {
             return null;
@@ -106,7 +106,7 @@ public class FastJsonUtils {
         }
 
         for (Object item : arr) {
-            list.add(toBean(convertObjectToJSON(item), clazz));
+            list.add(toBean(toJson(item), clazz));
         }
 
         return list;
@@ -128,7 +128,7 @@ public class FastJsonUtils {
      * @param clazz
      * @return
      */
-    public static <T> T convertJsonToObject(String jsonData, Class<?> clazz) {
+    public static <T> T parse(String jsonData, Class<?> clazz) {
 
         try {
             if (StringUtils.isEmpty(jsonData)) {
@@ -153,7 +153,7 @@ public class FastJsonUtils {
      * @return
      */
     public static <T> T convert(Object obj, Class<?> clazz) {
-        return convertJsonToObject(convertObjectToJSON(obj), clazz);
+        return parse(toJson(obj), clazz);
     }
 
     /**
