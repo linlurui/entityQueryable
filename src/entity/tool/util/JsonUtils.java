@@ -108,8 +108,11 @@ public class JsonUtils
         return "";
     }
 
-    public static <T, S> T convert(S src, Class<T> pojoClass)
-    {
+    public static <T, S> T convert(S src, Class<T> pojoClass) throws IOException {
+        if(src instanceof String) {
+            return parse((String) src, pojoClass);
+        }
+
         String json = toJson(src);
         T target = null;
         try {
