@@ -232,7 +232,7 @@ public class ApplicationConfig  {
         return data;
     }
 
-    public List getList(String key) {
+    public List getList(String key) throws IOException {
 
         Map result = getMap(key);
         if(result instanceof List) {

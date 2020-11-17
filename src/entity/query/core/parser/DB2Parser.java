@@ -257,6 +257,10 @@ public class DB2Parser extends SqlParserBase {
         if(defaultType.toLowerCase().equals("image")) {
             return "BLOB";
         }
+        if(defaultType.toLowerCase().equals("money")) {
+            return "decimal";
+        }
+
         return defaultType;
     }
 }

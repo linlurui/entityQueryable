@@ -264,6 +264,9 @@ public class SqlserverParser extends SqlParserBase
         if(defaultType.toLowerCase().equals("image")) {
             return "BINARY";
         }
+        if(defaultType.toLowerCase().equals("money")) {
+            return "decimal";
+        }
 
         return defaultType;
     }

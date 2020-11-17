@@ -264,6 +264,9 @@ public class SybaseParser extends SqlParserBase
         if(defaultType.toLowerCase().equals("image")) {
             return "Image";
         }
+        if(defaultType.toLowerCase().equals("money")) {
+            return "decimal";
+        }
 
         return defaultType;
     }

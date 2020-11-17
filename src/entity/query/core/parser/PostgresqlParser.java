@@ -271,6 +271,9 @@ public class PostgresqlParser extends MysqlParser {
         if(defaultType.toLowerCase().equals("image")) {
             return "BLOB";
         }
+		if(defaultType.toLowerCase().equals("money")) {
+			return "decimal";
+		}
 
         return defaultType;
     }

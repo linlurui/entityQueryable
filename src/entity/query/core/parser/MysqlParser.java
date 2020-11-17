@@ -419,8 +419,11 @@ public class MysqlParser extends SqlParserBase {
             return "varchar";
         }
 		if(defaultType.toLowerCase().equals("image")) {
-            return "BLOB";
-        }
+			return "BLOB";
+		}
+		if(defaultType.toLowerCase().equals("money")) {
+			return "decimal";
+		}
 		return defaultType;
 	}
 }
