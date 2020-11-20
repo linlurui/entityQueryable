@@ -188,7 +188,7 @@ public class DBUtils
             return "";
         }
         return arg.toString()
-                .replaceAll( "'", "''" )
+                .replaceAll( "'", "" )
                 .replaceAll("%", "％")
                 .replaceAll("[\\*]", "×")
                 .replaceAll(";", "；")
