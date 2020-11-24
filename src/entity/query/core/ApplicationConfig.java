@@ -78,8 +78,33 @@ public class ApplicationConfig  {
         }
 
         file = new File(property+ File.separator + "conf" + File.separator+"application.yaml");
+
         if(file.exists()) {
             return new FileInputStream(file);
+        }
+        else {
+            file = new File(System.getProperty("user.dir") + "/conf/application.yml");
+        }
+
+        if(file.exists()) {
+            return new FileInputStream(file);
+        }
+        else {
+            file = new File(System.getProperty("user.dir") + "/conf/application.yaml");
+        }
+
+        if(file.exists()) {
+            return new FileInputStream(file);
+        }
+        else {
+            file = new File(System.getProperty("user.dir") + "/config/application.yml");
+        }
+
+        if(file.exists()) {
+            return new FileInputStream(file);
+        }
+        else {
+            file = new File(System.getProperty("user.dir") + "/config/application.yaml");
         }
 
         if(file.exists()) {
@@ -94,27 +119,6 @@ public class ApplicationConfig  {
         }
         else {
             file = new File(System.getProperty("user.dir") + "/application.yml");
-        }
-
-        if(file.exists()) {
-            return new FileInputStream(file);
-        }
-        else {
-            file = new File(System.getProperty("user.dir") + "/config/application.yaml");
-        }
-
-        if(file.exists()) {
-            return new FileInputStream(file);
-        }
-        else {
-            file = new File(System.getProperty("user.dir") + "/conf/application.yml");
-        }
-
-        if(file.exists()) {
-            return new FileInputStream(file);
-        }
-        else {
-            file = new File(System.getProperty("user.dir") + "/conf/application.yaml");
         }
 
         if(file.exists()) {

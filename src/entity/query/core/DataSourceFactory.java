@@ -511,7 +511,7 @@ public final class DataSourceFactory {
 			return new FileInputStream(file);
 		}
 		else {
-			file = new File(System.getProperty("user.dir") + "/" + xmlFileName);
+			file = new File(System.getProperty("user.dir") + "/conf/" + xmlFileName);
 		}
 
 		if(file.exists()) {
@@ -525,7 +525,7 @@ public final class DataSourceFactory {
 			return new FileInputStream(file);
 		}
 		else {
-			file = new File(System.getProperty("user.dir") + "/conf/" + xmlFileName);
+			file = new File(System.getProperty("user.dir") + "/" + xmlFileName);
 		}
 
 		if(file.exists()) {
