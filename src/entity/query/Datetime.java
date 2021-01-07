@@ -272,4 +272,46 @@ public final class Datetime extends Queryable<Datetime> {
     public String getExpression() {
         return format(now(), "yyyy-MM-dd HH:mm:ss");
     }
+
+    /**
+     * 当前时间是否在指定区间内
+     * @param startTime 开始时间，格式HH:mm
+     * @param endTime 结束时间，格式HH:mm
+     */
+    public static boolean isEffectiveDate(String startTime, String endTime) throws ParseException {
+        Date now = now();
+        String dateString = format(now, "yyyy-MM-dd ");
+        Date begin = new SimpleDateFormat("HH:mm").parse(dateString + startTime);
+        Date end = new SimpleDateFormat("HH:mm").parse(dateString + endTime);
+        return isEffectiveDate(now, begin, end);
+    }
+
+    /**
+     * 判断当前时间是否在[startTime, endTime]区间，注意时间格式要一致
+     *
+     * @param nowTime 当前时间
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     */
+    public static boolean isEffectiveDate(Date nowTime, Date startTime, Date endTime) {
+        if (nowTime.getTime() == startTime.getTime()
+                || nowTime.getTime() == endTime.getTime()) {
+            return true;
+        }
+
+        Calendar date = Calendar.getInstance();
+        date.setTime(nowTime);
+
+        Calendar begin = Calendar.getInstance();
+        begin.setTime(startTime);
+
+        Calendar end = Calendar.getInstance();
+        end.setTime(endTime);
+
+        if (date.after(begin) && date.before(end)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
