@@ -113,6 +113,10 @@ public class JsonUtils
             return parse((String) src, pojoClass);
         }
 
+        if(src.getClass().equals(pojoClass)) {
+            return (T) src;
+        }
+
         String json = toJson(src);
         T target = null;
         try {

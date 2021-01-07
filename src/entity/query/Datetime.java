@@ -281,8 +281,8 @@ public final class Datetime extends Queryable<Datetime> {
     public static boolean isEffectiveDate(String startTime, String endTime) throws ParseException {
         Date now = now();
         String dateString = format(now, "yyyy-MM-dd ");
-        Date begin = new SimpleDateFormat("HH:mm").parse(dateString + startTime);
-        Date end = new SimpleDateFormat("HH:mm").parse(dateString + endTime);
+        Date begin = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(dateString + startTime);
+        Date end = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(dateString + endTime);
         return isEffectiveDate(now, begin, end);
     }
 
