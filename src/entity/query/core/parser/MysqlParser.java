@@ -416,7 +416,7 @@ public class MysqlParser extends SqlParserBase {
             return "varchar";
         }
 		if(defaultType.toLowerCase().equals("text")) {
-            return "varchar";
+            return "text";
         }
 		if(defaultType.toLowerCase().equals("image")) {
 			return "BLOB";
