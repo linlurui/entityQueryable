@@ -656,4 +656,9 @@ public abstract class SqlParserBase implements ISqlParser {
 	};
 
 	public abstract String getSelectNow();
+
+	@Override
+	public String getDropTableSql(String tablename) {
+		return "DROP TABLE " + tablename;
+	}
 }

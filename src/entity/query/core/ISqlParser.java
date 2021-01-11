@@ -88,6 +88,8 @@ public interface ISqlParser {
 
 	<T> String getTableExistSql(String tablename);
 
+	<T> String getDropTableSql(String tablename);
+
 	String getWhereString();
 
     <T> String getTablename(OutParameter<Class<T>> param);

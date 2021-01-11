@@ -305,7 +305,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 		DataSource dataSource = DataSourceFactory.getInstance().getDataSource(dataSourceId);
 		String sql = SqlParserFactory.createParser(dataSource).getCreateTableSql(tablename, columns);
-		DBExecutorAdapter.createExecutor(dataSource).execute(sql, null);
+		DBExecutorAdapter.createExecutor(dataSource).execute(sql);
 
 	}
 
@@ -317,7 +317,19 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 		DataSource dataSource = DataSourceFactory.getInstance().getDataSource(dataSourceId);
 		String sql = SqlParserFactory.createParser(dataSource).getAlterTableSql(tablename, columns);
-		DBExecutorAdapter.createExecutor(dataSource).execute(sql, null);
+		DBExecutorAdapter.createExecutor(dataSource).execute(sql);
+
+	}
+
+	public static void dropTable(String dataSourceId, String tablename) throws Exception {
+
+		if(isEmpty(tablename)) {
+			throw new Exception("tablename can not be empty!");
+		}
+
+		DataSource dataSource = DataSourceFactory.getInstance().getDataSource(dataSourceId);
+		String sql = SqlParserFactory.createParser(dataSource).getDropTableSql(tablename);
+		DBExecutorAdapter.createExecutor(dataSource).execute(sql);
 
 	}
 
