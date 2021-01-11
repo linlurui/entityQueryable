@@ -332,7 +332,7 @@ public class MysqlParser extends SqlParserBase {
 
 	@Override
 	public <T> String getTableExistSql(String tablename) {
-		String sql = String.format("select count(TABLE_NAME) from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA='dbname' and TABLE_NAME='%s';", tablename);
+		String sql = String.format("select count(TABLE_NAME) from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA='%s' and TABLE_NAME='%s';", this.dataSource.getId(), tablename);
 
 		return sql;
 	}
