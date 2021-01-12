@@ -260,7 +260,13 @@ public class MysqlParser extends SqlParserBase {
 		}
 
 		sb.append(",");
-		if("decimal".equals(type.toLowerCase()) || "float".equals(type.toLowerCase()) || "double".equals(type.toLowerCase())){
+
+		if(col.getAlterMode() == AlterMode.DROP || col.getAlterMode() == AlterMode.RENAME) {
+			col.setCanNotNull(false);
+			sb.append(alterString + "`"+ col.getColumnName() + "` ");
+		}
+
+		else if("decimal".equals(type.toLowerCase()) || "float".equals(type.toLowerCase()) || "double".equals(type.toLowerCase())){
             sb.append(alterString + "`"+ col.getColumnName() + "` " + type + String.format("(%s, 4)", len));
         }
 
