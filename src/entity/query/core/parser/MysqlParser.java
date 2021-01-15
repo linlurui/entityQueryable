@@ -252,9 +252,6 @@ public class MysqlParser extends SqlParserBase {
 					break;
 				case ADD:
 					alterString = " ADD ";
-					if(col.isPrimaryKey()) {
-						alterString = alterString + "primary key ";
-					}
 					break;
 				case RENAME:
 					alterString = " RENAME ";
