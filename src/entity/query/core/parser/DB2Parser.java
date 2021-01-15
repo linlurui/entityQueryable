@@ -74,7 +74,7 @@ public class DB2Parser extends SqlParserBase {
                 continue;
             }
 
-            if(col.getPrimaryKey() && col.getDataType() != null &&
+            if(col.isPrimaryKey() && col.getDataType() != null &&
                     ("INTEGER".equals(col.getDataType().toUpperCase()) ||
                             "LONG".equals(col.getDataType().toUpperCase()) ||
                             "INT".equals(col.getDataType().toUpperCase()) ||
@@ -88,7 +88,7 @@ public class DB2Parser extends SqlParserBase {
                 sb.append(" GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1 ) ");
             }
 
-            if(col.getPrimaryKey()) {
+            if(col.isPrimaryKey()) {
                 pk = col.getColumnName();
             }
         }

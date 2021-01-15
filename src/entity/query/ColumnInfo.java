@@ -97,7 +97,12 @@ public class ColumnInfo implements Serializable {
 
 	private Boolean isPrimaryKey;
 
-	public Boolean getPrimaryKey() {
+    public Boolean isPrimaryKey() {
+
+        return getIsPrimaryKey();
+    }
+
+	public Boolean getIsPrimaryKey() {
 
 		if(isPrimaryKey == null) {
 			return false;
@@ -106,7 +111,7 @@ public class ColumnInfo implements Serializable {
 		return isPrimaryKey;
 	}
 
-	public void setPrimaryKey(Boolean primaryKey) {
+	public void setIsPrimaryKey(Boolean primaryKey) {
 		isPrimaryKey = primaryKey;
 	}
 

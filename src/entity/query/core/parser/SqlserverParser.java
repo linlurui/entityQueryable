@@ -81,7 +81,7 @@ public class SqlserverParser extends SqlParserBase
                 continue;
             }
 
-            if(col.getPrimaryKey() && col.getDataType() != null &&
+            if(col.isPrimaryKey() && col.getDataType() != null &&
                     ("INTEGER".equals(col.getDataType().toUpperCase()) ||
                             "LONG".equals(col.getDataType().toUpperCase()) ||
                             "INT".equals(col.getDataType().toUpperCase()) ||
@@ -95,7 +95,7 @@ public class SqlserverParser extends SqlParserBase
                 sb.append(" IDENTITY (1,1) ");
             }
 
-            if(col.getPrimaryKey()) {
+            if(col.isPrimaryKey()) {
                 sb.append(" PRIMARY KEY ");
             }
         }

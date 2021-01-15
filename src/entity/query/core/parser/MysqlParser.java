@@ -252,6 +252,9 @@ public class MysqlParser extends SqlParserBase {
 					break;
 				case ADD:
 					alterString = " ADD ";
+					if(col.isPrimaryKey()) {
+						alterString = alterString + "primary key ";
+					}
 					break;
 				case RENAME:
 					alterString = " RENAME ";
@@ -284,7 +287,7 @@ public class MysqlParser extends SqlParserBase {
 
         if(!isAlter) {
 
-			if(col.getPrimaryKey() && col.getDataType() != null &&
+			if(col.isPrimaryKey() && col.getDataType() != null &&
 					("INTEGER".equals(col.getDataType().toUpperCase()) ||
 							"LONG".equals(col.getDataType().toUpperCase()) ||
 							"INT".equals(col.getDataType().toUpperCase()) ||
@@ -296,7 +299,7 @@ public class MysqlParser extends SqlParserBase {
 				sb.append(" AUTO_INCREMENT ");
 			}
 
-			if (col.getPrimaryKey()) {
+			if (col.isPrimaryKey()) {
 				pk = col.getColumnName();
 			}
 

@@ -82,7 +82,7 @@ public class SqLiteParser extends MysqlParser {
                 continue;
             }
 
-            if(col.getPrimaryKey() && col.getDataType() != null &&
+            if(col.isPrimaryKey() && col.getDataType() != null &&
                     ("INTEGER".equals(col.getDataType().toUpperCase()) ||
                             "LONG".equals(col.getDataType().toUpperCase()) ||
                             "INT".equals(col.getDataType().toUpperCase()) ||
@@ -92,7 +92,7 @@ public class SqLiteParser extends MysqlParser {
 
             fillBuildColumnString(sb, col, false);
 
-            if(col.getPrimaryKey()) {
+            if(col.isPrimaryKey()) {
                 sb.append(" PRIMARY KEY ");
             }
 
