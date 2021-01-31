@@ -16,6 +16,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
@@ -280,9 +281,25 @@ public final class Datetime extends Queryable<Datetime> {
      */
     public static boolean isEffectiveDate(String startTime, String endTime) throws ParseException {
         Date now = now();
+        String startTimeFormat = "HH:mm";
+        String endTimeFormat = "HH:mm";
+        List<String> arr = StringUtils.splitString2List(startTime, ":");
+        if(arr.size()==3) {
+            startTimeFormat = "HH:mm:ss";
+        }
+        else if(arr.size()==1) {
+            startTimeFormat = "HH";
+        }
+        arr = StringUtils.splitString2List(endTime, ":");
+        if(arr.size()==3) {
+            endTimeFormat = "HH:mm:ss";
+        }
+        else if(arr.size()==1) {
+            endTimeFormat = "HH";
+        }
         String dateString = format(now, "yyyy-MM-dd ");
-        Date begin = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(dateString + startTime);
-        Date end = new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(dateString + endTime);
+        Date begin = new SimpleDateFormat("yyyy-MM-dd " + startTimeFormat).parse(dateString + startTime);
+        Date end = new SimpleDateFormat("yyyy-MM-dd " + endTimeFormat).parse(dateString + endTime);
         return isEffectiveDate(now, begin, end);
     }
 
