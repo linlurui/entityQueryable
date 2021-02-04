@@ -176,6 +176,22 @@ public class ApplicationConfig  {
         }
     }
 
+    public void set(String key, String value) {
+        configMap.put(String.format("${%s}", key), value);
+        List<String> keys = StringUtils.splitString2List(key, "\\.");
+        Map tempMap = map;
+        for(int i=0; i<keys.size(); i++) {
+            if(i==keys.size()-1) {
+                tempMap.put(keys.get(i), value);
+            }
+            else if(!tempMap.containsKey(keys.get(i))) {
+                Map newMap = new HashMap();
+                tempMap.put(keys.get(i), newMap);
+                tempMap = newMap;
+            }
+        }
+    }
+
     public String get(String key) {
 
         List<String> keys = StringUtils.splitString2List(key, ":");
