@@ -225,7 +225,7 @@ public class MysqlParser extends SqlParserBase {
 		if(uniqueList.size() > 0) {
 			sb.append(String.format(",constraint %s unique(%s)",
 					StringUtils.join("_", uniqueList),
-					StringUtils.join(",", uniqueList)));
+					getPrefix() + StringUtils.join(getSuffix() + "," + getPrefix(), uniqueList) + getSuffix()));
 		}
 
 		return String.format("CREATE TABLE `%s` (%s) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;", tablename, sb.substring(1));

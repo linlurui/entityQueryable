@@ -133,14 +133,14 @@ public class OracleParser extends SqlParserBase {
 		}
 
 		if(isNotEmpty(pk)) {
-			sb.append(String.format(",constraint PK_%s primary key (%s)", tablename, pk));
+			sb.append(String.format(",constraint PK_%s primary key (%s)", tablename, String.format("%s%s%s", getPrefix(), pk, getSuffix())));
 		}
 
 		List<String> uniqueList = columns.stream().filter(a -> a.isUnique()).map(b -> b.getColumnName()).collect(Collectors.toList());
 		if(uniqueList.size() > 0) {
 			sb.append(String.format(",constraint %s unique(%s)",
 					StringUtils.join("_", uniqueList),
-					StringUtils.join(",", uniqueList)));
+					getPrefix() + StringUtils.join(getSuffix() + "," + getPrefix(), uniqueList) + getSuffix()));
 		}
 
 		return String.format("CREATE  TABLE %s (%s)", tablename, sb.substring(1));

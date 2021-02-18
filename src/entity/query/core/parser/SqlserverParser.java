@@ -104,7 +104,7 @@ public class SqlserverParser extends SqlParserBase
         if(uniqueList.size() > 0) {
             sb.append(String.format(",constraint %s unique(%s)",
                     StringUtils.join("_", uniqueList),
-                    StringUtils.join(",", uniqueList)));
+                    getPrefix() + StringUtils.join(getSuffix() + "," + getPrefix(), uniqueList) + getSuffix()));
         }
 
         return String.format("CREATE  TABLE [%s] (%s);", tablename, sb.substring(1));
