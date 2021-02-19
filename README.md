@@ -4,7 +4,7 @@
 
 <p align="center">
     <p align="left">
-EntityQueryable是Java开如平台下轻量级ORM, 支持多数据库映射操作的开源ORM库, 兼容mybatis配置,支持联表查询、异步批量插入、更新、删除,内置阿里的Druid数据库连接池支持数据库mysql/sqlserver/sqlite/oracle/postgresql,以及集成了rxjava2-jdbc(默认不开启),可以支持响应式的异步非阻塞IO操作数据; 
+EntityQueryable是Java开如平台下轻量级ORM, 支持多数据库映射操作的开源ORM库, 兼容mybatis配置,支持联表查询、异步批量插入、更新、删除,内置阿里的Druid数据库连接池支持数据库mysql/mariadb/sqlserver/sqlite/oracle/postgresql,以及集成了rxjava2-jdbc(默认不开启),可以支持响应式的异步非阻塞IO操作数据; 
 </p>
     <img align="right" src="https://github.com/linlurui/entityQueryable/blob/main/pay5.jpg" alt="捐赠给作者"  width="200">
     <p align="right">

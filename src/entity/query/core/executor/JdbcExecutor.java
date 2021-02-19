@@ -135,6 +135,7 @@ public class JdbcExecutor implements IDBExecutor {
                         sql = m.replaceAll("INSERT IGNORE_ROW_ON_DUPKEY_INDEX($2($3)) INTO $1");
                     }
                     break;
+                case "MARIADB":
                 case "MYSQL":
                     sql = sql.replaceAll("insert\\s+into", "insert\\s+ignore\\s+into");
                     break;

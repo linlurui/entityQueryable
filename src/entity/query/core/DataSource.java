@@ -222,6 +222,7 @@ public class DataSource extends DruidDataSource {
 				return DatabaseType.DERBY;
 			case "INFORMIX":
 				return DatabaseType.INFORMIX;
+			case "MARIADB":
 			case "MYSQL":
 				return DatabaseType.MYSQL;
 			case "SQLSERVER":

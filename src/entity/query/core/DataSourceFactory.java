@@ -31,7 +31,7 @@ public final class DataSourceFactory {
 
 	private static final Logger log = LogManager.getLogger( DataSourceFactory.class );
 
-	private static final String regexUrl = "jdbc:(mysql|sqlserver|db2|oracle|couchbase|derby|hive2|postgresql|sybase|sqlite|microsoft:sqlserver)(:\\w+:)?@?:?(//|\\(|:)?([\\w+\\.\\-_]+|\\w:)(:\\d+)?(/|;\\s*DatabaseName=|:|[\\w=\\(\\)\\s]+)([\\w\\-_\\.]+)";
+	private static final String regexUrl = "jdbc:(mysql|mariadb|sqlserver|db2|oracle|couchbase|derby|hive2|postgresql|sybase|sqlite|microsoft:sqlserver)(:\\w+:)?@?:?(//|\\(|:)?([\\w+\\.\\-_]+|\\w:)(:\\d+)?(/|;\\s*DatabaseName=|:|[\\w=\\(\\)\\s]+)([\\w\\-_\\.]+)";
 
 	private static boolean hasLoadedXmlConfig = false;
 	private static boolean hasLoadedYmlConfig = false;
@@ -267,7 +267,7 @@ public final class DataSourceFactory {
 		dataSource.setLogAbandoned(true);
 		dataSource.setTimeBetweenLogStatsMillis(120000);
 
-		if(StringUtils.isNotEmpty(dataSource.getDbType()) && "|couchbase|derby|hive|mysql|postgresql|sqlite|".contains(dataSource.getDbType())) {
+		if(StringUtils.isNotEmpty(dataSource.getDbType()) && "|couchbase|derby|hive|mysql|mariadb|postgresql|sqlite|".contains(dataSource.getDbType())) {
 			dataSource.setPoolPreparedStatements(false);
 			dataSource.setMaxPoolPreparedStatementPerConnectionSize(-1);
 		}
@@ -378,7 +378,7 @@ public final class DataSourceFactory {
 						String dbtype = getDbType(url);
 						dataSource.setValidationQuery(getVaildationQuery(dbtype));
 						dataSource.setDbType(dbtype.toLowerCase());
-						if(StringUtils.isNotEmpty(dataSource.getDbType()) && "|couchbase|derby|hive|mysql|postgresql|sqlite|".contains(dataSource.getDbType())) {
+						if(StringUtils.isNotEmpty(dataSource.getDbType()) && "|couchbase|derby|hive|mysql|mariadb|postgresql|sqlite|".contains(dataSource.getDbType())) {
 							dataSource.setPoolPreparedStatements(false);
 							dataSource.setMaxPoolPreparedStatementPerConnectionSize(-1);
 						}
@@ -658,6 +658,10 @@ public final class DataSourceFactory {
 	public String getConnectionUrl(String driverType, String dbType, String server, int port, String db) {
 
 		if("mysql".equalsIgnoreCase(dbType.trim())) {
+			return String.format("%s:%s://%s:%d/%s", driverType, dbType, server, port, db);
+		}
+
+		else if("mariadb".equalsIgnoreCase(dbType.trim())) {
 			return String.format("%s:%s://%s:%d/%s", driverType, dbType, server, port, db);
 		}
 

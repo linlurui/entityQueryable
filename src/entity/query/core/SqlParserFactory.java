@@ -95,6 +95,10 @@ public class SqlParserFactory<T> {
 		    parser = new MysqlParser(ds);
 		}
 
+		else if("mariadb".equalsIgnoreCase(type.trim())) {
+			parser = new MariaDBParser(ds);
+		}
+
 		else if("oracle".equalsIgnoreCase(type.trim())) {
 		    parser =  new OracleParser(ds);
 		}
@@ -145,7 +149,7 @@ public class SqlParserFactory<T> {
 	private static String getDBType(DataSource ds) {
 		String type = "";
 		String url = ds.getUrl();
-		Pattern pattern = Pattern.compile("(?i)(oracle|sqlite|sqlserver|couchbase|derby|hive|mysql|postgresql|sybase|db2|odbc)");
+		Pattern pattern = Pattern.compile("(?i)(oracle|sqlite|sqlserver|couchbase|derby|hive|mariadb|mysql|postgresql|sybase|db2|odbc)");
 		Matcher matcher = pattern.matcher(url);
 		if(matcher.find()) {
             type = matcher.group(1);
