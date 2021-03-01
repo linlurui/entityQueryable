@@ -30,8 +30,6 @@ import javax.net.ssl.SSLSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import entity.tool.util.StringUtils;
-
 public class RequestUtils
 {
     public static final String METHOD_POST = "POST";
@@ -46,7 +44,7 @@ public class RequestUtils
         return get(serviceUrl, null);
     }
     
-    public static String get( String serviceUrl, Map<String, String> headParams )
+    public static String get( String serviceUrl, Map headParams )
             throws IOException
     {
         StringBuffer sb = new StringBuffer();
@@ -97,7 +95,7 @@ public class RequestUtils
         return request( serviceUrl, jsonParameter, headParams, "POST" );
     }
     
-    public static String request( String serviceUrl, String parameterString, Map<String, String> headParams,
+    public static String request( String serviceUrl, String parameterString, Map headParams,
             String restMethod ) throws IOException
     {
         String method = restMethod.toUpperCase();
@@ -204,8 +202,7 @@ public class RequestUtils
         return sb;
     }
 
-    private static HttpURLConnection getURLConnection( String serviceUrl, String restMethod,
-            Map<String, String> headParams ) throws IOException
+    private static HttpURLConnection getURLConnection( String serviceUrl, String restMethod, Map<String, Object> headParams ) throws IOException
     {
         URL url = new URL( serviceUrl );
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
@@ -229,11 +226,9 @@ public class RequestUtils
         if ( headParams == null )
         {
             //conn.setRequestProperty( "Content-Type", "application/json" );
-        } else
-        {
-            for ( Entry<String, String> entry : headParams.entrySet() )
-            {
-                conn.setRequestProperty( entry.getKey(), entry.getValue() );
+        } else {
+            for ( Map.Entry<String, Object> entry : headParams.entrySet() ) {
+                conn.setRequestProperty( entry.getKey(), entry.getValue().toString() );
             }
             
         }
