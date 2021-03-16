@@ -72,10 +72,6 @@ public class ColumnInfo implements Serializable {
 		this.dataType = dataType;
 	}
 
-	public void setType(String dataType) {
-		this.dataType = dataType;
-	}
-
 	@Fieldname(value="data_type")
 	private String dataType;
 
