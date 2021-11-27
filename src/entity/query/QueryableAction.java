@@ -195,9 +195,9 @@ public abstract class QueryableAction<T> implements IDataActuator
     }
 
     public boolean exist() throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Exist, entityObject(), 0, 0, false, null );
-        Number result = DBExecutorAdapter.createExecutor(this, getGenericType()).first(Number.class, sql);
-        return result != null && result.intValue() > 0;
+        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 1, false, null );
+        T result = DBExecutorAdapter.createExecutor(this, getGenericType()).first(getGenericType(), sql);
+        return (result == null? false: true);
     }
 
     @Override
@@ -281,7 +281,7 @@ public abstract class QueryableAction<T> implements IDataActuator
     }
 
     public Single<Boolean> isEmpty() throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Exist, entityObject(), 0, 0, false, null );
+        String sql = getParser().toString( getGenericType(), "", CommandMode.Exist, entityObject(), 0, 1, false, null );
         Flowable<T> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(getGenericType(), sql);
         return flowable.isEmpty();
     }
