@@ -48,15 +48,13 @@ public class SqlserverParser extends SqlParserBase
     }
 
     @Override
-    public String getTablesSql()
-    {
-        return "select name as table_name from sysobjects where xtype='u'";
+    public String getTablesSql() {
+        return "select name as table_name from sysobjects where xtype='u' OR xtype='v'";
     }
 
     @Override
-    public String getColumnInfoListSql( String tablename )
-    {
-        return String.format( "select column_name,'' column_comment,data_type, (SELECT COLUMNPROPERTY( OBJECT_ID('%s'),column_name,'IsIdentity')) as isAutoIncrement from information_schema.columns where table_name='%s'", tablename, tablename );
+    public String getColumnInfoListSql( String tablename ) {
+        return String.format( "select COLUMN_NAME AS column_name,'' column_comment,DATA_TYPE AS data_type, (SELECT COLUMNPROPERTY( OBJECT_ID('%s'),column_name,'IsIdentity')) as isAutoIncrement from information_schema.COLUMNS where TABLE_NAME='%s'", tablename, tablename );
     }
 
     @Override
@@ -156,6 +154,20 @@ public class SqlserverParser extends SqlParserBase
             }
             else {
                 alterString = col.getAlterMode().getValue();
+            }
+        }
+        else {
+            if(StringUtils.isNotEmpty(col.getDefaultValue())) {
+                if(col.getDataType() != null &&
+                        ("INTEGER".equals(col.getDataType().toUpperCase()) ||
+                                "LONG".equals(col.getDataType().toUpperCase()) ||
+                                "INT".equals(col.getDataType().toUpperCase()) ||
+                                "BIGINT".equals(col.getDataType().toUpperCase()) ) ) {
+                    sb.append(String.format(" default %s ", col.getDefaultValue()));
+                }
+                else {
+                    sb.append(String.format(" default '%s' ", col.getDefaultValue()));
+                }
             }
         }
 

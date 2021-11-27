@@ -35,7 +35,7 @@ public final class On<T> extends QueryableAction<T> {
 
 	public Where<T> where(String exp) {
 		Where<T> clause = new Where<T>();
-		clause.init(getGenericType(), entityObject(), getParser(), this);
+		clause.init(this.genericType, this.entityObject(), getParser(), this);
 		clause.getParser().addWhere(exp);
 
 		return clause;
@@ -43,7 +43,7 @@ public final class On<T> extends QueryableAction<T> {
 
 	public Select<T> select(String... exp) {
 		Select<T> clause = new Select<T>();
-		clause.init(getGenericType(), entityObject(), getParser(), this);
+		clause.init(this.genericType, this.entityObject(), getParser(), this);
 		if(exp != null && exp.length > 0) {
 			clause.getParser().addSelect(StringUtils.join(", ", exp));
 		}
@@ -53,7 +53,7 @@ public final class On<T> extends QueryableAction<T> {
 
 	public OrderBy<T> orderby(String... exp) {
 		OrderBy<T> clause = new OrderBy<T>();
-		clause.init(getGenericType(), entityObject(), getParser(), this);
+		clause.init(this.genericType, this.entityObject(), getParser(), this);
 		clause.getParser().addOrderBy(StringUtils.join(", ", exp));
 
 		return clause;
@@ -61,7 +61,7 @@ public final class On<T> extends QueryableAction<T> {
 
 	public GroupBy<T> groupby(String... exp) {
 		GroupBy<T> clause = new GroupBy<T>();
-		clause.init(getGenericType(), entityObject(), getParser(), this);
+		clause.init(this.genericType, this.entityObject(), getParser(), this);
 		clause.getParser().addGroupBy(StringUtils.join(", ", exp));
 
 		return clause;
@@ -69,7 +69,7 @@ public final class On<T> extends QueryableAction<T> {
 
 	public <T1> boolean insertTo(Class<T1> clazz) throws SQLException {
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(getGenericType(), "", CommandMode.InsertFrom, entityObject(), 0, 0, false, blobMap);
+		String sql = getParser().toString(this.genericType, "", CommandMode.InsertFrom, this.entityObject(), 0, 0, false, blobMap);
 		Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
 
 		return row!=null && row > 0;
@@ -77,7 +77,7 @@ public final class On<T> extends QueryableAction<T> {
 
     public <T1> Flowable<Integer> asyncInsertTo(Class<T1> clazz) throws Exception {
         Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-        String sql = getParser().toString(getGenericType(), "", CommandMode.InsertFrom, entityObject(), 0, 0, false, blobMap);
+        String sql = getParser().toString(this.genericType, "", CommandMode.InsertFrom, this.entityObject(), 0, 0, false, blobMap);
 		return DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(sql, blobMap);
     }
 

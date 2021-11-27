@@ -12,17 +12,19 @@
 package entity.query.core.executor;
 
 
+import entity.query.core.DataSource;
 import entity.query.core.IDataActuator;
 import entity.tool.util.DBUtils;
 import entity.tool.util.StringUtils;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.davidmoten.rx.jdbc.*;
 import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
 import org.davidmoten.rx.jdbc.pool.Pools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.annotation.Nonnull;
 import java.sql.*;
 import java.util.*;
@@ -35,9 +37,14 @@ public class RxJava2JdbcExecutor implements IDBExecutor {
 
     private Database db;
 
-    private static final Logger log = LogManager.getLogger( RxJava2JdbcExecutor.class );
+    private static final Logger log = LoggerFactory.getLogger( RxJava2JdbcExecutor.class );
 
     private IDataActuator dataActuator;
+
+    @Override
+    public DataSource getDatasource() throws SQLException {
+        return dataActuator.dataSource();
+    }
 
     public RxJava2JdbcExecutor(IDataActuator dataActuator) {
         try {
@@ -55,8 +62,17 @@ public class RxJava2JdbcExecutor implements IDBExecutor {
     }
 
     @Override
-    public Connection getConnection() {
-        return dataActuator.getConnection();
+    public Connection getConnection() throws SQLException {
+
+        if(dataActuator.dataSource().getTransaction() != null) {
+            return dataActuator.dataSource().getTransaction().getConnection();
+        }
+
+        if(dataActuator.getConnection() != null) {
+            return dataActuator.getConnection();
+        }
+
+        return dataActuator.dataSource().getConnection();
     }
 
     @Override
@@ -156,7 +172,7 @@ public class RxJava2JdbcExecutor implements IDBExecutor {
                 results.add((E)execute(sql, blobMap));
             }
             catch (SQLException e) {
-                log.error(e);
+                log.error(e.getMessage(), e);
             }
         }
 

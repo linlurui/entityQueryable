@@ -55,7 +55,7 @@ public class PostgresqlParser extends MysqlParser {
 
 	@Override
 	public String getPrimaryKeySpl(String tablename) {
-		return String.format( "SELECT A.column_name FROM information_schema.columns A\n" +
+		return String.format( "SELECT A.COLUMN_NAME FROM information_schema.COLUMNS A\n" +
 				"LEFT JOIN (\n" +
 				"    SELECT pg_attribute.attname FROM pg_index, pg_class, pg_attribute \n" +
 				"    WHERE pg_class.oid = '%s' :: regclass AND pg_index.indrelid = pg_class.oid AND \n" +
@@ -119,6 +119,20 @@ public class PostgresqlParser extends MysqlParser {
 				col.setAlterMode(AlterMode.CHANGE);
 			}
 			alterString = col.getAlterMode().getValue();
+		}
+		else {
+			if(StringUtils.isNotEmpty(col.getDefaultValue())) {
+				if(col.getDataType() != null &&
+						("INTEGER".equals(col.getDataType().toUpperCase()) ||
+								"LONG".equals(col.getDataType().toUpperCase()) ||
+								"INT".equals(col.getDataType().toUpperCase()) ||
+								"BIGINT".equals(col.getDataType().toUpperCase()) ) ) {
+					sb.append(String.format(" default %s ", col.getDefaultValue()));
+				}
+				else {
+					sb.append(String.format(" default '%s' ", col.getDefaultValue()));
+				}
+			}
 		}
 
 		sb.append(",");

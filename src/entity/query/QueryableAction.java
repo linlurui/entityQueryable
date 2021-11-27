@@ -20,8 +20,8 @@ import entity.query.enums.CommandMode;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Blob;
 import java.sql.Connection;
@@ -33,9 +33,10 @@ import java.util.Map;
 
 public abstract class QueryableAction<T> implements IDataActuator
 {
-	private static final Logger log = LogManager.getLogger(Queryable.class);
+	private static final Logger log = LoggerFactory.getLogger(Queryable.class);
 
-    protected QueryableAction(){}
+    protected QueryableAction(){
+    }
 
     protected QueryableAction(DBTransaction transaction){
         this.transaction = transaction;
@@ -131,6 +132,15 @@ public abstract class QueryableAction<T> implements IDataActuator
         return genericType;
     }
 
+    protected void finalize() {
+        parser = null;
+        entityObject = null;
+        genericType = null;
+        connection = null;
+        transaction = null;
+        dataSource = null;
+    }
+
     public <E> From<T> as( String alias )
     {
         From<T> clause = new From<T>();
@@ -141,61 +151,61 @@ public abstract class QueryableAction<T> implements IDataActuator
     }
 
     public List<T> query() throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 0, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 0, false, null );
         List<T> result = DBExecutorAdapter.createExecutor(this, getGenericType()).query(getGenericType(), sql);
         return result;
     }
 
     public <E> List<E> query( Class<E> type ) throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 0, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 0, false, null );
         List<E> result = DBExecutorAdapter.createExecutor(this, getGenericType()).query(type, sql);
         return result;
     }
 
     public List<T> query( int skip, int top ) throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), skip, top, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, skip, top, false, null );
         List<T> result = DBExecutorAdapter.createExecutor(this, getGenericType()).query(getGenericType(), sql);
         return result;
     }
 
     public <E> List<E> query( Class<E> type, int skip, int top ) throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), skip, top, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, skip, top, false, null );
         List<E> result = DBExecutorAdapter.createExecutor(this, getGenericType()).query(type, sql);
         return result;
     }
 
     public long count() throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.SelectCount, entityObject(), 0, 0, true, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.SelectCount, this.entityObject, 0, 0, true, null );
         Number result = DBExecutorAdapter.createExecutor(this, getGenericType()).first(Number.class, sql);
         return null==result ? 0 : result.longValue();
     }
 
     public T first() throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 1, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 1, false, null );
         T result = DBExecutorAdapter.createExecutor(this, getGenericType()).first(getGenericType(), sql);
         return result;
     }
 
     public <E> E first( Class<E> type ) throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 1, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 1, false, null );
         E result = DBExecutorAdapter.createExecutor(this, getGenericType()).first(type, sql);
         return result;
     }
 
     public List<T> top( int count ) throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, count, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, count, false, null );
         List<T> result = DBExecutorAdapter.createExecutor(this, getGenericType()).query(getGenericType(), sql);
         return result;
     }
 
     public <E> List<E> top( Class<E> type, int count ) throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, count, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, count, false, null );
         List<E> result = DBExecutorAdapter.createExecutor(this, getGenericType()).query(type, sql);
         return result;
     }
 
     public boolean exist() throws SQLException {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 1, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 1, false, null );
         T result = DBExecutorAdapter.createExecutor(this, getGenericType()).first(getGenericType(), sql);
         return (result == null? false: true);
     }
@@ -217,71 +227,72 @@ public abstract class QueryableAction<T> implements IDataActuator
 
     public String toString( CommandMode mode, int skip, int top )
     {
-        String sql = getParser().toString( getGenericType(), "", mode, entityObject(), skip, top, false, null );
+        String sql = getParser().toString( this.genericType, "", mode, this.entityObject, skip, top, false, null );
 
         return sql.substring( 0, sql.length() - 1 );
     }
 
 
     public Flowable<T> asyncQuery() throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 0, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 0, false, null );
         Flowable<T> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(getGenericType(), sql);
         return flowable;
     }
 
     public <E> Flowable<E> asyncQuery(Class<E> type ) throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 0, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 0, false, null );
         Flowable<E> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(type, sql);
         return flowable;
     }
 
     public Flowable<T> asyncQuery(int skip, int top ) throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), skip, top, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, skip, top, false, null );
         Flowable<T> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(getGenericType(), sql);
         return flowable;
     }
 
     public <E> Flowable<E> asyncQuery(Class<E> type, int skip, int top ) throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), skip, top, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, skip, top, false, null );
         Flowable<E> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(type, sql);
         return flowable;
     }
 
     public Single<Long> asyncCount() throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.SelectCount, entityObject(), 0, 0, true, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.SelectCount, this.entityObject, 0, 0, true, null );
         Flowable<Long> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(Long.class, sql);
         return flowable.first(Long.valueOf(0));
     }
 
     public Maybe<T> asyncFirst() throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 1, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 1, false, null );
         return DBExecutorAdapter.createExecutor(this, getGenericType()).maybe(getGenericType(), sql);
     }
 
     public <E> Maybe<E> asyncFirst(Class<E> type ) throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, 1, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 1, false, null );
         return DBExecutorAdapter.createExecutor(this, getGenericType()).maybe(type, sql);
     }
 
     public Flowable<T> asyncTop( int count ) throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, count, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, count, false, null );
         Flowable<T> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(getGenericType(), sql);
         return flowable;
     }
 
     public <E> Flowable<E> asyncTop(Class<E> type, int count ) throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Select, entityObject(), 0, count, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, count, false, null );
         Flowable<E> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(type, sql);
         return flowable;
     }
 
-    public Single<Integer> asyncExist() throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Exist, entityObject(), 0, 1, false, null );
-        return DBExecutorAdapter.createExecutor(this, getGenericType()).single(Integer.class, sql);
+    public Single<Boolean> asyncExist() throws Exception {
+        String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 1, false, null );
+        Single<Boolean> single = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(getGenericType(), sql).any(a-> a!=null);
+        return single;
     }
 
     public Single<Boolean> isEmpty() throws Exception {
-        String sql = getParser().toString( getGenericType(), "", CommandMode.Exist, entityObject(), 0, 1, false, null );
+        String sql = getParser().toString( this.genericType, "", CommandMode.Exist, this.entityObject, 0, 1, false, null );
         Flowable<T> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(getGenericType(), sql);
         return flowable.isEmpty();
     }

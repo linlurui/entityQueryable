@@ -148,11 +148,24 @@ public class SqLiteParser extends MysqlParser {
 
         String alterString = "";
         if(isAlter) {
-
             if(col.getAlterMode() == null) {
                 col.setAlterMode(AlterMode.ADD);
             }
             alterString = col.getAlterMode().getValue();
+        }
+        else {
+            if(StringUtils.isNotEmpty(col.getDefaultValue())) {
+                if(col.getDataType() != null &&
+                        ("INTEGER".equals(col.getDataType().toUpperCase()) ||
+                                "LONG".equals(col.getDataType().toUpperCase()) ||
+                                "INT".equals(col.getDataType().toUpperCase()) ||
+                                "BIGINT".equals(col.getDataType().toUpperCase()) ) ) {
+                    sb.append(String.format(" default %s ", col.getDefaultValue()));
+                }
+                else {
+                    sb.append(String.format(" default '%s' ", col.getDefaultValue()));
+                }
+            }
         }
 
         sb.append(",");
@@ -164,6 +177,9 @@ public class SqLiteParser extends MysqlParser {
             sb.append(alterString + "["+ col.getColumnName() + "] " + type + String.format("(%s)", len));
         }
 
+        else if("int".equalsIgnoreCase(type)) {
+            sb.append(alterString + "["+ col.getColumnName() + "] INTEGER");
+        }
         else {
             sb.append(alterString + "["+ col.getColumnName() + "] " + type);
         }

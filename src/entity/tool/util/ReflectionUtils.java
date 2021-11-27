@@ -12,6 +12,7 @@ package entity.tool.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
@@ -27,7 +28,7 @@ public class ReflectionUtils {
 
     private volatile static HashMap<String, MethodAccess> methodMap = new HashMap<String, MethodAccess>();
     private volatile static HashMap<String, ConstructorAccess<?>> objMap = new HashMap<String, ConstructorAccess<?>>();
-    private static <T> MethodAccess getMethodAccess(Class<T> clazz) {
+    public static <T> MethodAccess getMethodAccess(Class<T> clazz) {
 
         if (!methodMap.containsKey(clazz.getName())) {
             synchronized (methodMap) {
@@ -48,7 +49,7 @@ public class ReflectionUtils {
 
 
     @SuppressWarnings("unchecked")
-    private static <T> ConstructorAccess<T> getConstructorAccess(Class<T> clazz){
+    public static <T> ConstructorAccess<T> getConstructorAccess(Class<T> clazz){
         if (!objMap.containsKey(clazz.getName())) {
             synchronized (objMap) {
                 if (!objMap.containsKey(clazz.getName())) {
@@ -92,7 +93,7 @@ public class ReflectionUtils {
         if(hasMethod(out, access)) {
 
             if(value != null) {
-                if (access.getReturnTypes().length == 1 && access.getReturnTypes()[0].equals(UUID.class)) {
+                if (access.getReturnTypes().length == 1 && access.getIndex(method)>-1 && access.getReturnTypes()[access.getIndex(method)].equals(UUID.class)) {
                     String str = value.toString();
                     if (StringUtils.isNotEmpty(str) && str.length() == 32) {
                         value = (T) UUID.fromString(str.substring(0, 8) + "-" +
@@ -109,7 +110,9 @@ public class ReflectionUtils {
                 }
             }
             else {
-                result = access.invoke(obj, method, value);
+                Class<?>[] types = new Class<?>[1];
+                types[0] = value.getClass();
+                result = access.invoke(obj, method, types, value);
             }
         }
 
@@ -125,10 +128,8 @@ public class ReflectionUtils {
         if(hasMethod(out, access)) {
 
             result = access.invoke(obj, out.getData());
-            if(result == null && access.getReturnTypes().length > 1) {
-                if (access.getReturnTypes()[0].equals(UUID.class)) {
-                    result = UUID.randomUUID();
-                }
+            if(result == null && access.getIndex(method)>-1 && access.getReturnTypes()[access.getIndex(method)].equals(UUID.class)) {
+                result = UUID.randomUUID();
             }
         }
 
@@ -155,6 +156,11 @@ public class ReflectionUtils {
 
         String method = getMethodName(fieldname, "get");
 
+        final String finalMethod = method;
+        if(!Arrays.stream(clazz.getDeclaredMethods()).filter(a->a.getName().equals(finalMethod)).findAny().isPresent()) {
+            method = "get"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+        }
+
         return invoke(clazz, obj, method);
     }
 
@@ -164,12 +170,22 @@ public class ReflectionUtils {
 
         String method = getMethodName(fieldname, "set");
 
+        final String finalMethod = method;
+        if(!Arrays.stream(clazz.getDeclaredMethods()).filter(a->a.getName().equals(finalMethod)).findAny().isPresent()) {
+            method = "set"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+        }
+
         if(value != null) {
             boolean hasValue = false;
 
             try{
                 if(!hasValue && !clazz.getDeclaredField(fieldname).getGenericType().equals(value.getClass())) {
-                    value = StringUtils.cast(clazz.getDeclaredField(fieldname).getGenericType(), value.toString());
+                    if(Date.class.equals(value.getClass()) && !Date.class.equals(clazz.getDeclaredField(fieldname).getGenericType())) {
+                        value = Datetime.format((Date) value, "yyyy-MM-dd HH:mm:ss.SSS");
+                    }
+                    else {
+                        value = StringUtils.cast(clazz.getDeclaredField(fieldname).getGenericType(), value.toString());
+                    }
                     hasValue = true;
                 }
             }
@@ -192,6 +208,11 @@ public class ReflectionUtils {
             if(!hasValue) {
                 try {
                     String getter = getMethodName(fieldname, "get");
+                    String finalGetter = getter;
+                    if(!Arrays.stream(clazz.getDeclaredMethods()).filter(a->a.getName().equals(finalGetter)).findAny().isPresent()) {
+                        getter = "get"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+                    }
+
                     if (clazz.getMethod(getter) != null) {
                         value = StringUtils.cast(clazz.getMethod(getter).getReturnType(), value.toString());
                         hasValue = true;

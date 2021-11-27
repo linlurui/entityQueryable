@@ -17,8 +17,9 @@ import entity.query.core.IDataActuator;
 import entity.tool.util.DBUtils;
 import entity.tool.util.StringUtils;
 import io.reactivex.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -27,7 +28,7 @@ import java.util.regex.Pattern;
 
 public class JdbcExecutor implements IDBExecutor {
 
-    private static final Logger log = LogManager.getLogger( JdbcExecutor.class );
+    private static final Logger log = LoggerFactory.getLogger( JdbcExecutor.class );
 
     private IDataActuator dataActuator;
 
@@ -36,13 +37,22 @@ public class JdbcExecutor implements IDBExecutor {
     }
 
     @Override
-    public Connection getConnection() {
+    public DataSource getDatasource() throws SQLException {
+        return dataActuator.dataSource();
+    }
+
+    @Override
+    public Connection getConnection() throws SQLException {
 
         if(dataActuator.dataSource().getTransaction() != null) {
             return dataActuator.dataSource().getTransaction().getConnection();
         }
 
-        return dataActuator.getConnection();
+        if(dataActuator.getConnection() != null) {
+            return dataActuator.getConnection();
+        }
+
+        return dataActuator.dataSource().getConnection();
     }
 
     @Override
@@ -54,12 +64,12 @@ public class JdbcExecutor implements IDBExecutor {
     @Override
     public Integer execute( String sql, Map<Integer, Blob> blobMap ) throws SQLException
     {
-        return DBUtils.execute(Integer.class, sql, blobMap, getConnection());
+        return DBUtils.execute(Integer.class, sql, blobMap, getConnection(), getDatasource());
     }
 
     @Override
     public <E> List<E> query( Class<E> returnType, String sql ) throws SQLException {
-        List<E> result = DBUtils.query(returnType, returnType, sql, false, getConnection());
+        List<E> result = DBUtils.query(returnType, returnType, sql, false, getConnection(), getDatasource());
 
         return result;
     }
@@ -71,7 +81,7 @@ public class JdbcExecutor implements IDBExecutor {
             throw new SQLException("Sql statement can not be empty!!!");
         }
 
-        List<Integer> result = DBUtils.query(Integer.class, Integer.class, sql, true, getConnection());
+        List<Integer> result = DBUtils.query(Integer.class, Integer.class, sql, true, getConnection(), getDatasource());
         if(result==null || result.size()<1) {
             return 0;
         }
@@ -81,7 +91,7 @@ public class JdbcExecutor implements IDBExecutor {
 
     @Override
     public <E> E first(Class<E> returnType, String sql) throws SQLException {
-        List<E> result = DBUtils.query(returnType, returnType, sql, false, getConnection());
+        List<E> result = DBUtils.query(returnType, returnType, sql, false, getConnection(), getDatasource());
         if(result==null || result.size()<1) {
             return null;
         }
@@ -96,7 +106,7 @@ public class JdbcExecutor implements IDBExecutor {
 
             List<List> results = new ArrayList<List>();
             for(String sql : sqls) {
-                results.add(DBUtils.query(returnType, returnType, sql, false, getConnection()));
+                results.add(DBUtils.query(returnType, returnType, sql, false, getConnection(), getDatasource()));
             }
 
             return results;
@@ -104,7 +114,7 @@ public class JdbcExecutor implements IDBExecutor {
 
         List<E> results2 = new ArrayList<E>();
         for(String sql : sqls) {
-            List<E> list = DBUtils.query(returnType, returnType, sql, false, getConnection());
+            List<E> list = DBUtils.query(returnType, returnType, sql, false, getConnection(), getDatasource());
             if(list==null) {
                 continue;
             }
@@ -148,7 +158,7 @@ public class JdbcExecutor implements IDBExecutor {
                 results.add((E)execute(sql, blobMap));
             }
             catch (SQLException e) {
-                log.error(e);
+                log.error(e.getMessage(), e);
             }
         }
 
@@ -181,7 +191,7 @@ public class JdbcExecutor implements IDBExecutor {
                 .create(new FlowableOnSubscribe<E>() {
                     @Override
                     public void subscribe(FlowableEmitter<E> e) throws Exception {
-                        List<E> result = DBUtils.query(returnType, returnType, sql, false, getConnection());
+                        List<E> result = DBUtils.query(returnType, returnType, sql, false, getConnection(), getDatasource());
                         if(result == null) {
                             return;
                         }

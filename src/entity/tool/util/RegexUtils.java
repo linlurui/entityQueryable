@@ -12,7 +12,7 @@ package entity.tool.util;
 
 public class RegexUtils {
 	
-	public static final String PrefixAndSuffix = "\\[\\s*([_\\d\\w]+)\\s*\\]";
+	public static final String PrefixAndSuffix = "\\[\\s*([_\\d\\w\\u4e00-\\u9fa5]+)\\s*\\]";
 	
 	public static final String PrefixAndSuffixForChar = "'[^']*\\\\[\\\\s*([_\\\\d\\\\w]+)\\\\s*\\\\][^']*'";
 	

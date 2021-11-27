@@ -35,31 +35,31 @@ public class DataActuatorFactory {
                 return;
             }
 
-            this.dataSource = dataSource;
-            this.connection = dataSource.getConnection();
+            this.dataSource.set(dataSource);
+            this.connection.set(dataSource.getConnection());
         }
 
         @JsonIgnore
         @JSONField(serialize = false)
-        private Connection connection;
+        private ThreadLocal<Connection> connection = new ThreadLocal<>();
 
         @JsonIgnore
         @JSONField(serialize = false)
-        private DataSource dataSource;
+        private ThreadLocal<DataSource> dataSource = new ThreadLocal<>();
 
         @Override
         public Connection getConnection() {
-            return this.connection;
+            return this.connection.get();
         }
 
         @Override
         public void setConnection(Connection conn) {
-            this.connection = conn;
+            this.connection.set(conn);
         }
 
         @Override
         public DataSource dataSource() {
-            return this.dataSource;
+            return this.dataSource.get();
         }
 
         @Override

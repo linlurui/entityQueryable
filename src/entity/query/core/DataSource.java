@@ -14,9 +14,9 @@ package entity.query.core;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.pool.DruidPooledConnection;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.davidmoten.rx.jdbc.pool.DatabaseType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -24,7 +24,7 @@ import java.sql.SQLException;
 
 public class DataSource extends DruidDataSource {
 
-	private static final Logger log = LogManager.getLogger( DataSource.class );
+	private static final Logger log = LoggerFactory.getLogger( DataSource.class );
 	private ThreadLocal<DBTransaction> transactionSet = new ThreadLocal<DBTransaction>();
 
 	public String getId() {
@@ -177,26 +177,35 @@ public class DataSource extends DruidDataSource {
 		}
 
 		if(connection != null) {
-			if(!connection.isClosed()) {
-				if(connection.getAutoCommit() && autoCommit) {
-//					synchronized (this) {
-//						activedCount++;
-//					}
-					return connection;
+			if (!connection.isClosed()) {
+				synchronized (connection) {
+					try {
+						if (!connection.isClosed() && autoCommit && connection.getAutoCommit()) {
+							//activedCount++;
+							return connection;
+						}
+					}
+					catch(Exception e) {
+						log.warn(e.getMessage());
+					}
 				}
 			}
 		}
 
 		connection = super.getConnection();
-//		connection.setAutoCommit(autoCommit);
+		if(!connection.isClosed() && !autoCommit && connection.getAutoCommit()) {
+			log.info("open connection transaction!");
+			connection.setAutoCommit(autoCommit);
+		}
 
 		return connection;
 	}
 
 	public DBTransaction beginTransaction() throws ClassNotFoundException, SQLException {
-		Class.forName(getDriverClassName());
-		Connection conn = DriverManager.getConnection(getUrl(), getUsername(), getPassword());
-		conn.setAutoCommit(false);
+		//Class.forName(getDriverClassName());
+		//Connection conn = DriverManager.getConnection(getUrl(), getUsername(), getPassword());
+		//conn.setAutoCommit(false);
+		Connection conn = getConnection(false);
 		DBTransaction transaction = new DBTransaction();
 		transaction.setConnection(conn);
 		this.transactionSet.set(transaction);

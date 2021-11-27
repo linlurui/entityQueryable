@@ -17,18 +17,23 @@ import entity.query.enums.CommandMode;
 import entity.query.enums.Condition;
 import entity.query.enums.JoinMode;
 import entity.tool.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.sql.Blob;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public abstract class SqlParserBase implements ISqlParser {
+
+	private static final Logger log = LoggerFactory.getLogger(SqlParserBase.class);
 
 	protected SqlContainer container;
 
@@ -61,7 +66,7 @@ public abstract class SqlParserBase implements ISqlParser {
 	@Override
 	public void addWhere(String exp) {
 
-		if(exp.isEmpty()) {
+		if(StringUtils.isEmpty(exp)) {
 			return;
 		}
 
@@ -79,7 +84,7 @@ public abstract class SqlParserBase implements ISqlParser {
 	@Override
 	public void addWhere(Condition condition, String exp) {
 
-		if(exp.isEmpty()) {
+		if(StringUtils.isEmpty(exp)) {
 			return;
 		}
 
@@ -99,7 +104,7 @@ public abstract class SqlParserBase implements ISqlParser {
 
 	@Override
 	public void addSelect(String exp) {
-		if(exp.isEmpty()) {
+		if(StringUtils.isEmpty(exp)) {
 			return;
 		}
 
@@ -112,7 +117,7 @@ public abstract class SqlParserBase implements ISqlParser {
 
 	@Override
 	public void addOrderBy(String exp) {
-		if(exp.isEmpty()) {
+		if(StringUtils.isEmpty(exp)) {
 			return;
 		}
 
@@ -122,7 +127,7 @@ public abstract class SqlParserBase implements ISqlParser {
 
 	@Override
 	public void addGroupBy(String exp) {
-		if(exp.isEmpty()) {
+		if(StringUtils.isEmpty(exp)) {
 			return;
 		}
 
@@ -133,7 +138,7 @@ public abstract class SqlParserBase implements ISqlParser {
 	@Override
 	public void addJoin(JoinMode mode, String exp, String alias) {
 
-		if(alias.isEmpty() || exp.isEmpty()) {
+		if(StringUtils.isEmpty(alias) || StringUtils.isEmpty(exp)) {
 			return;
 		}
 		container.Join.add(String.format(" %s JOIN (%s) AS %s ", mode.toString(), filter(exp.substring(0, exp.length()-2)), alias));
@@ -154,7 +159,7 @@ public abstract class SqlParserBase implements ISqlParser {
 		String tablename = getTablename(param);
 		clazz = param.getData();
 
-		if(alias.isEmpty()) {
+		if(StringUtils.isEmpty(alias)) {
 			container.Join.add(String.format(" %s JOIN [%s] ", mode.toString(), tablename));
 			return;
 		}
@@ -165,7 +170,7 @@ public abstract class SqlParserBase implements ISqlParser {
    @Override
     public <T> void addFrom(Class<T> clazz, String alias) {
 
-        if(alias.isEmpty()) {
+        if(StringUtils.isEmpty(alias)) {
             return;
         }
 		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
@@ -179,7 +184,7 @@ public abstract class SqlParserBase implements ISqlParser {
 	@Override
 	public void addFrom(String exp, String alias) {
 
-		if(exp.isEmpty() || alias.isEmpty()) {
+		if(StringUtils.isEmpty(exp) || StringUtils.isEmpty(alias)) {
 			return;
 		}
 
@@ -200,7 +205,7 @@ public abstract class SqlParserBase implements ISqlParser {
 	@Override
 	public void addOn(String exp) {
 
-		if(exp == null || exp.isEmpty()) {
+		if(exp == null || StringUtils.isEmpty(exp)) {
 			return;
 		}
 
@@ -218,10 +223,20 @@ public abstract class SqlParserBase implements ISqlParser {
 	    Pattern p2 = Pattern.compile("'([^']*)'");
 	    Matcher m = p.matcher(sql);
 	    List<String> result = new ArrayList<String>();
+		Field[] flds = clazz.getDeclaredFields();
 		int i = 0;
 	    while (m.find()) {
 	    	String fieldName = m.group(1);
 	    	Object value = ReflectionUtils.getFieldValue(clazz, obj, fieldName);
+			if(value==null && sql.replace("\n", "").toUpperCase().startsWith("INSERT INTO")) {
+				Optional<Field> optional = Arrays.stream(flds).filter(a -> a.getName().equals(fieldName) &&
+						String.class.equals(a.getType())).findFirst();
+				if(optional.isPresent()) {
+					if(optional.get().getAnnotation(PrimaryKey.class)!=null) {
+						value = UUID.randomUUID().toString().replace("-", "");
+					}
+				}
+			}
 	    	String strValue = "?";
 			if(value instanceof Blob) {
 				if(blobMap != null) {
@@ -259,28 +274,54 @@ public abstract class SqlParserBase implements ISqlParser {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public final <T> String getTablename(OutParameter<Class<T>> param) {
-		String val = "";
+	public <T> String getTablename(OutParameter<Class<T>> param) {
+		String table = "";
 		Class<T> clazz = (Class<T>) getClass(param.getData());
 		param.setData(clazz);
 
 		Tablename ann = clazz.getAnnotation(Tablename.class);
-		if(ann == null || ann.value().isEmpty()) {
-			val = clazz.getName().substring(clazz.getName().lastIndexOf('.')+1);
+		if(ann==null && clazz.getAnnotations()!=null && clazz.getAnnotations().length>0) {
+			for (Annotation item : clazz.getAnnotations()) {
+				if(StringUtils.isNotEmpty(table)) {
+					break;
+				}
+				List<Annotation> list = Arrays.stream(item.annotationType().getAnnotations()).collect(Collectors.toList());
+				for(int i=0; i<list.size(); i++) {
+					if (list.get(i) instanceof Tablename) {
+						String value = ReflectionUtils.invoke(item.getClass(), item, "table").toString();
+						ann = (Tablename) list.get(i);
+						//InvocationHandler handler = Proxy.getInvocationHandler(ann);
+						//Field field = handler.getClass().getDeclaredField("memberValues");
+						// 因为这个字段为 private final修饰所以要打开权限
+						//field.setAccessible(true);
+						// 获取memberValues
+						//Map memberValues = (Map) field.get(handler);
+						if(StringUtils.isNotEmpty(value)) {
+							// 修改 value 属性值
+							//memberValues.put("value", value);
+							table = value;
+							break;
+						}
+					}
+				}
+			}
 		}
 
-		else {
-			val = ann.value();
+		if(StringUtils.isEmpty(table)) {
+			if (ann == null || StringUtils.isEmpty(ann.value())) {
+				table = clazz.getName().substring(clazz.getName().lastIndexOf('.') + 1);
+			} else {
+				table = ann.value();
+			}
 		}
 
-		val = ApplicationConfig.getInstance().get(val);
-
-		if(val.isEmpty()) {
-			return val;
+		if(StringUtils.isEmpty(ApplicationConfig.getInstance().get(table, ""))) {
+			return getPrefix() + table + getSuffix();
 		}
 
-		return getPrefix() + val + getSuffix();
+		table = ApplicationConfig.getInstance().get(table, table);
+
+		return getPrefix() + table + getSuffix();
 	}
 
 	private <T> Class<? super T> getClass(Class<T> clazz) {
@@ -333,7 +374,7 @@ public abstract class SqlParserBase implements ISqlParser {
 				values += "," + String.format("#{%s}", fld.getName());
 			}
 		}
-		if(names.isEmpty()) {
+		if(StringUtils.isEmpty(names)) {
 			return "";
 		}
 
@@ -383,7 +424,7 @@ public abstract class SqlParserBase implements ISqlParser {
 				settor += String.format(",%s%s%s=#{%s}", getPrefix(), fld.getName(), getSuffix(), fld.getName());
 			}
 		}
-		if(settor.isEmpty()) {
+		if(StringUtils.isEmpty(settor)) {
 			return "";
 		}
 
@@ -407,7 +448,7 @@ public abstract class SqlParserBase implements ISqlParser {
 	@Override
 	public <T> String getInsertToSql(Class<T> clazz) {
 		String sql = getSelectSql(clazz);
-		if(sql.isEmpty()) {
+		if(StringUtils.isEmpty(sql)) {
 			return "";
 		}
 
@@ -439,7 +480,7 @@ public abstract class SqlParserBase implements ISqlParser {
                 names += String.format( ", %s%s%s", getPrefix(), fld.getName(), getSuffix());
             }
 		}
-		if(names.isEmpty()) {
+		if(StringUtils.isEmpty(names)) {
 			return "";
 		}
 
@@ -486,7 +527,7 @@ public abstract class SqlParserBase implements ISqlParser {
 				selectText = "COUNT(*) AS TOTAL";
 			}
 			else {
-				selectText = primaryKey.isEmpty() ? "COUNT(*) AS TOTAL" : String.format("COUNT(%s) AS TOTAL", primaryKey);
+				selectText = StringUtils.isEmpty(primaryKey) ? "COUNT(*) AS TOTAL" : String.format("COUNT(%s) AS TOTAL", primaryKey);
 			}
 		} else {
 			selectText = container.Select.length()>0 ? container.Select.toString() : "*";
@@ -532,7 +573,7 @@ public abstract class SqlParserBase implements ISqlParser {
 		String skipText = skip>0 ? String.format("WHERE ROWNUM>%s", skip) : "";
 
 		String sql = "";
-		if(!primaryKey.isEmpty() && skip>0) {
+		if(!StringUtils.isEmpty(primaryKey) && skip>0) {
 			if(selectText.equals("*")) {
 				selectText = fromText + ".*";
 			}

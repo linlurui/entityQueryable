@@ -13,20 +13,21 @@ package entity.tool.util;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import entity.query.ColumnInfo;
-import entity.query.Datetime;
-import entity.query.QueryableAction;
+import entity.query.*;
 import entity.query.core.*;
 import entity.query.core.executor.BatchExecutor;
 import entity.query.enums.CommandMode;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.davidmoten.rx.jdbc.exceptions.SQLRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.xml.crypto.Data;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.text.SimpleDateFormat;
@@ -39,7 +40,7 @@ import java.util.regex.Pattern;
 
 public class DBUtils
 {
-    private static final Logger log = LogManager.getLogger( DBUtils.class );
+    private static final Logger log = LoggerFactory.getLogger( DBUtils.class );
 
     public static String getSql( String sql, Object... args )
     {
@@ -63,8 +64,7 @@ public class DBUtils
             return "null";
         }
 
-        if ( arg instanceof String )
-        {
+        if ( arg instanceof String ) {
             if(arg == null) {
                 return "";
             }
@@ -111,6 +111,20 @@ public class DBUtils
 
         if ( arg instanceof Blob) {
             return String.format("'%s'", blobToString((Blob)arg));
+        }
+
+        if(arg.getClass().isEnum()) {
+            try {
+                Method getValueMethod = arg.getClass().getMethod("getValue");
+                if(getValueMethod == null) {
+                    return String.format( "'%s'", getSqlInjText( arg ) );
+                }
+                else {
+                    return String.format( "'%s'", arg.getClass().getMethod("getValue").invoke(arg).toString() );
+                }
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                log.warn(e.getMessage());
+            }
         }
 
         return getSqlInjText( arg );
@@ -189,9 +203,9 @@ public class DBUtils
         }
         return arg.toString()
                 .replaceAll( "'", "" )
-                .replaceAll("%", "％")
-                .replaceAll("[\\*]", "×")
-                .replaceAll(";", "；")
+                //.replaceAll("%", "％")
+                .replaceAll("\\*", "×")
+                //.replaceAll(";", "；")
                 .replaceAll("<", "＜")
                 .replaceAll(">", "＞");
     }
@@ -283,31 +297,41 @@ public class DBUtils
 
     public static <T> List<T> query( Class<T> clazz, String sql ) throws SQLException
     {
-        return query( clazz, clazz, sql, false, null );
+        return query( clazz, clazz, sql, false, null, null );
     }
 
     public static <T> List<T> query( Class<T> clazz, String sql, boolean isScalar ) throws SQLException
     {
-        return query( clazz, clazz, sql, isScalar, null );
+        return query( clazz, clazz, sql, isScalar, null, null );
     }
 
     public static <T> List<T> query( Class<T> clazz, String sql, boolean isScalar, Connection conn ) throws SQLException
     {
-        return query( clazz, clazz, sql, isScalar, conn );
+        return query( clazz, clazz, sql, isScalar, conn, null );
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T, E> List<E> query( Class<T> clazz, Class<E> returnType, String sql, boolean isScalar, Connection conn ) throws SQLException
-    {
+    public static <T, E> List<E> query(Class<T> clazz, Class<E> returnType, String sql, boolean isScalar, Connection conn, DataSource datasource) throws SQLException {
         PreparedStatement preparedstatement = null;
         ResultSet rs = null;
         List<E> list = new ArrayList<E>();
 
         try
         {
-            if ( conn == null )
-            {
-                conn = DataSourceFactory.getInstance().getDataSource().getConnection();
+            if(datasource == null) {
+                if(!clazz.isPrimitive() && !clazz.isEnum() &&
+                        (clazz.getSuperclass().equals(Queryable.class) ||
+                                clazz.getSuperclass().equals(QueryableBase.class) ||
+                                clazz.getSuperclass().equals(QueryableAction.class))){
+                    datasource = getDatasource(clazz);
+                }
+                else {
+                    datasource = getDatasource(null);
+                }
+            }
+
+            if ( conn == null ) {
+                conn = datasource.getConnection();
             }
 
             preparedstatement = conn.prepareStatement(sql);
@@ -320,47 +344,90 @@ public class DBUtils
                 list.add( result );
             }
             rs.close();
-
         } catch ( Exception e )
         {
-            if(conn != null && conn.isClosed()) {
-                conn = DataSourceFactory.getInstance().getDataSource().getConnection();
-                return query( clazz, returnType, sql, isScalar, conn);
-            }
-            if(!e.getMessage().equals("timeouted!")) {
-                String logmsg = String.format( "EntityQueryable Error:\n%s\n%s", sql, e.getMessage() );
-                log.error("entityQueryable Sql=======================>>>");
-                log.error( logmsg );
-                log.error( e.getMessage(), e );
-            }
-        }
-
-        try
-        {
-            if ( preparedstatement != null )
+            try
             {
-                preparedstatement.close();
+                if ( preparedstatement != null && !preparedstatement.isClosed() )
+                {
+                    preparedstatement.close();
+                }
+            } catch ( Exception ex )
+            {
+                log.warn( ex.getMessage() );
             }
-        } catch ( Exception e )
-        {
-            log.error( e.getMessage(), e );
+
+            if("true".equals(ApplicationConfig.getInstance().get("${entity.debug}", ""))) {
+                if(!e.getMessage().equals("timeouted!") &&
+                !"connection holder is null".equals(e.getMessage()) &&
+                !"Operation not allowed after ResultSet closed".equals(e.getMessage()) &&
+                !"ResultSet already requested".equals(e.getMessage()) &&
+                !"statement is not executing".equals(e.getMessage())) {
+                    String logmsg = String.format( "EntityQueryable Error:\n%s\n%s", sql, e.getMessage() );
+                    log.error("entityQueryable Sql=======================>>>");
+                    log.error( logmsg );
+                    log.error( e.getMessage(), e );
+                }
+                else {
+                    log.warn(e.getMessage());
+                }
+            }
+            if(conn != null) {
+                if (conn.isClosed()) {
+                    conn = datasource.getConnection();
+                    return query(clazz, returnType, sql, isScalar, conn, datasource);
+                }
+                else {
+                    datasource.close(conn);
+                    conn = datasource.getConnection();
+                }
+
+                if ("ResultSet already requested".equals(e.getMessage())) { //For sqlite
+                    return query(clazz, returnType, sql, isScalar, conn, datasource);
+                }
+
+                if ("statement is not executing".equals(e.getMessage())) { //For sqlite
+                    return query(clazz, returnType, sql, isScalar, conn, datasource);
+                }
+
+                if ("Operation not allowed after ResultSet closed".equals(e.getMessage())) {
+                    return query(clazz, returnType, sql, isScalar, conn, datasource);
+                }
+
+                if ("connection holder is null".equals(e.getMessage())) {
+                    return query(clazz, returnType, sql, isScalar, conn, datasource);
+                }
+
+                if ("Communications link failure".equals(e.getMessage())) {
+                    return query(clazz, returnType, sql, isScalar, conn, datasource);
+                }
+            }
         }
 
         return list;
     }
 
-    public static <T> List<Map<String, Object>> query( Class<T> clazz, String sql, Connection conn ) throws SQLRuntimeException
+    public static <T> List<Map<String, Object>> query( Class<T> clazz, String sql, Connection conn, DataSource datasource ) throws SQLRuntimeException
     {
-
         PreparedStatement preparedstatement = null;
         ResultSet rs = null;
         List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
 
-        try
-        {
-            if ( conn == null )
-            {
-                conn = DataSourceFactory.getInstance().getDataSource().getConnection();
+        try {
+            if(datasource == null) {
+                if(!clazz.isPrimitive() && !clazz.isEnum() &&
+                        (clazz.getSuperclass().equals(Queryable.class) ||
+                                clazz.getSuperclass().equals(QueryableBase.class) ||
+                                clazz.getSuperclass().equals(QueryableAction.class))){
+                    datasource = getDatasource(clazz);
+                }
+                else {
+                    datasource = getDatasource(null);
+                }
+            }
+
+            if ( conn == null ) {
+                conn = datasource.getConnection();
             }
 
             preparedstatement = conn.prepareStatement( sql );
@@ -368,26 +435,27 @@ public class DBUtils
             rs = preparedstatement.executeQuery();
 
             ResultSetMetaData rsmd = rs.getMetaData();
-            while ( rs.next() )
-            {
+            while (rs.next()) {
                 Map result = DBUtils.getMetaData(rs, rsmd, Map.class);
-                list.add( result );
+                list.add(result);
             }
             rs.close();
 
         } catch ( Exception e )
         {
-            if(!e.getMessage().equals("timeouted!")) {
-                String logmsg = String.format( "EntityQueryable Error:\n%s\n%s", sql, e.getMessage() );
-                log.error("entityQueryable Sql=======================>>>");
-                log.error( logmsg );
-                log.error( e.getMessage(), e );
+            if("true".equals(ApplicationConfig.getInstance().get("${entity.debug}", ""))) {
+                if(!e.getMessage().equals("timeouted!")) {
+                    String logmsg = String.format( "EntityQueryable Error:\n%s\n%s", sql, e.getMessage() );
+                    log.error("entityQueryable Sql=======================>>>");
+                    log.error( logmsg );
+                    log.error( e.getMessage(), e );
+                }
             }
         }
 
         try
         {
-            if ( preparedstatement != null )
+            if ( preparedstatement != null && !preparedstatement.isClosed() )
             {
                 preparedstatement.close();
             }
@@ -401,34 +469,39 @@ public class DBUtils
 
     public static <T> Integer execute( Class<T> clazz, String sql) throws SQLException
     {
-        return execute(clazz, sql, null, null);
+        return execute(clazz, sql, null, null, null);
     }
 
     public static <T> Integer execute( Class<T> clazz, String sql, Connection conn) throws SQLException
     {
-        return execute(clazz, sql, null, null);
+        return execute(clazz, sql, null, conn, null);
     }
 
     public static <T> Integer execute( Class<T> clazz, String sql, Map<Integer, Blob> blobMap ) throws SQLException
     {
-        return execute(clazz, sql, blobMap, null);
+        return execute(clazz, sql, blobMap, null, null);
     }
 
-    public static <T> Integer execute( Class<T> clazz, String sql, Map<Integer, Blob> blobMap, Connection conn) throws SQLException
+    public static <T> Integer execute( Class<T> clazz, String sql, Map<Integer, Blob> blobMap, Connection conn, DataSource datasource) throws SQLException
     {
         PreparedStatement preparedstatement = null;
         int rs = 0;
 
-        DataSource datasource = null;
         boolean autoCommit = true;
 
-        try
-        {
-            begin:
-
-            datasource = DataSourceFactory.getInstance().getDataSource();
-            if ( conn == null )
-            {
+        try {
+            if(datasource == null) {
+                if(!clazz.isPrimitive() && !clazz.isEnum() &&
+                        (clazz.getSuperclass().equals(Queryable.class) ||
+                                clazz.getSuperclass().equals(QueryableBase.class) ||
+                                clazz.getSuperclass().equals(QueryableAction.class))){
+                    datasource = getDatasource(clazz);
+                }
+                else {
+                    datasource = getDatasource(null);
+                }
+            }
+            if ( conn == null ) {
                 conn = datasource.getConnection();
             }
             else {
@@ -467,37 +540,75 @@ public class DBUtils
 
         } catch ( Exception e )
         {
-            if(conn.isClosed()) {
-                conn = datasource.getConnection();
-                return execute( clazz, sql, blobMap, conn);
-            }
-            if(autoCommit) {
-                datasource.rollback(conn);
-            }
-            String logmsg = String.format( "EntityQueryable Error:\n%s\n%s", sql, e.getMessage() );
-            if(!e.getMessage().equals("timeouted!")) {
-                log.error("entityQueryable Sql=======================>>>");
-                log.error( logmsg );
-                log.error( e.getMessage(), e );
+            try
+            {
+                if ( preparedstatement != null && !preparedstatement.isClosed() )
+                {
+                    preparedstatement.close();
+                }
+            } catch ( Exception ex )
+            {
+                log.warn( ex.getMessage() );
             }
 
             if("true".equals(ApplicationConfig.getInstance().get("${entity.debug}", ""))) {
+                String logmsg = String.format( "EntityQueryable Error:\n%s\n%s", sql, e.getMessage() );
+                if(!e.getMessage().equals("timeouted!")) {
+                    log.error("entityQueryable Sql=======================>>>");
+                    log.error( logmsg );
+                    log.error( e.getMessage(), e );
+                }
                 throw new SQLException( logmsg );
             }
-            else {
-                throw new SQLException( e.getMessage() );
+
+            if(conn != null && conn.getAutoCommit()) {
+                if (conn.isClosed()) {
+                    conn = datasource.getConnection();
+                    return execute( clazz, sql, blobMap, conn, datasource);
+                }
+                else {
+                    datasource.close(conn);
+                    conn = datasource.getConnection();
+                }
+
+                if ("ResultSet already requested".equals(e.getMessage())) { //For sqlite
+                    return execute( clazz, sql, blobMap, conn, datasource);
+                }
+
+                if ("statement is not executing".equals(e.getMessage())) { //For sqlite
+                    return execute( clazz, sql, blobMap, conn, datasource);
+                }
+
+                if ("Operation not allowed after ResultSet closed".equals(e.getMessage())) {
+                    return execute( clazz, sql, blobMap, conn, datasource);
+                }
+
+                if ("connection holder is null".equals(e.getMessage())) {
+                    return execute( clazz, sql, blobMap, conn, datasource);
+                }
+
+                if ("Communications link failure".equals(e.getMessage())) {
+                    return execute( clazz, sql, blobMap, conn, datasource);
+                }
+
+                datasource.commit(conn);
             }
+            else {
+                datasource.rollback(conn);
+            }
+
+            throw e;
         } finally
         {
             try
             {
-                if ( preparedstatement != null )
+                if ( preparedstatement != null && !preparedstatement.isClosed() )
                 {
                     preparedstatement.close();
                 }
             } catch ( Exception e )
             {
-                log.error( e.getMessage(), e );
+                log.warn( e.getMessage() );
             }
         }
     }
@@ -565,7 +676,7 @@ public class DBUtils
             catch ( Exception e )
             {
                 log.error( String.format( "error field=====> %s", rsmd.getColumnLabel( i + 1 ) ) );
-                log.error(e);
+                log.error(e.getMessage());
             }
         }
 
@@ -588,5 +699,14 @@ public class DBUtils
         columnName = swap.substring(0, 1).toLowerCase() + swap.substring(1);
 
         return columnName;
+    }
+
+    private static <T> DataSource getDatasource(Class<T> clazz) throws SQLException {
+        String ds = DataSourceFactory.findDataSourceAnnotation(clazz);
+        if(StringUtils.isNotEmpty(ds)) {
+            return DataSourceFactory.getInstance().getDataSource(ds);
+        }
+
+        return DataSourceFactory.getInstance().getDataSource();
     }
 }

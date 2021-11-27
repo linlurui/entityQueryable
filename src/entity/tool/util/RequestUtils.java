@@ -10,6 +10,9 @@
 
 package entity.tool.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,16 +22,12 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public class RequestUtils
 {
@@ -37,7 +36,7 @@ public class RequestUtils
     public static final String METHOD_DELETE = "DELETE";
     public static final String METHOD_PUT = "PUT";
 
-    private static final Logger log = LogManager.getLogger(RequestUtils.class); 
+    private static final Logger log = LoggerFactory.getLogger(RequestUtils.class);
     
     public static String get( String serviceUrl ) throws IOException
     {
@@ -96,8 +95,7 @@ public class RequestUtils
     }
     
     public static String request( String serviceUrl, String parameterString, Map headParams,
-            String restMethod ) throws IOException
-    {
+            String restMethod ) throws IOException {
         String method = restMethod.toUpperCase();
         HttpURLConnection conn = null;
         OutputStream outPutStream = null;
@@ -189,6 +187,38 @@ public class RequestUtils
         return str;
     }
 
+    public static HttpURLConnection getConnection( String serviceUrl, String parameterString, Map headParams,
+                                  String restMethod ) throws IOException {
+        String method = restMethod.toUpperCase();
+        HttpURLConnection conn = null;
+        String str = null;
+        try
+        {
+            trustAllHttpsCertificates();
+            HttpsURLConnection.setDefaultHostnameVerifier(hv);
+
+            conn = getURLConnection( serviceUrl, method, headParams );
+
+            return conn;
+
+        } catch ( Exception e ) {
+            log.error( String.format("Url: %s, method: %s, postdata: %s", serviceUrl, method, parameterString) );
+            log.error( "RequestUtils request error-> " + e.getMessage() );
+            if ( conn != null )
+            {
+                try
+                {
+                    conn.disconnect();
+                } catch ( Exception ex )
+                {
+                    conn = null;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public static StringBuilder getMessageFromReader( BufferedReader br ) throws IOException
     {
         StringBuilder sb = new StringBuilder();
@@ -204,7 +234,7 @@ public class RequestUtils
 
     private static HttpURLConnection getURLConnection( String serviceUrl, String restMethod, Map<String, Object> headParams ) throws IOException
     {
-        URL url = new URL( serviceUrl );
+        URL url = new URL( new String(serviceUrl.getBytes(StandardCharsets.UTF_8)) );
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
         // 设置URL链接时间和超时时间都为1分钟
         conn.setConnectTimeout( 1000 * 60 * 1 );

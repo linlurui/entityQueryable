@@ -31,7 +31,7 @@ public final class Select<T> extends QueryableAction<T> {
 
 	public Join<T> join(JoinMode mode, Queryable<?> q, String alias) {
 		Join<T> clause = new Join<T>(this.dataSource);
-		clause.init(getGenericType(), entityObject(), getParser());
+		clause.init(this.genericType, this.entityObject(), getParser());
 		clause.getParser().addJoin(mode, q.toString(CommandMode.Select), alias);
 
 		return clause;
@@ -39,7 +39,7 @@ public final class Select<T> extends QueryableAction<T> {
 
 	public <E> Select<E> union(Select<E> clause) {
 
-		clause.getParser().addUnioin(getParser().toString(getGenericType(), "", CommandMode.Select, entityObject(), 0, 0, false, null));
+		clause.getParser().addUnioin(getParser().toString(this.genericType, "", CommandMode.Select, this.entityObject(), 0, 0, false, null));
 
 		return clause;
 	}
@@ -55,7 +55,7 @@ public final class Select<T> extends QueryableAction<T> {
 		}
 
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(getGenericType(), null, CommandMode.Select, entityObject(), 0, 0, false, blobMap);
+		String sql = getParser().toString(this.genericType, null, CommandMode.Select, this.entityObject(), 0, 0, false, blobMap);
 		sql = String.format("CREATE VIEW [%s] AS %s", viewName, sql);
 		DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
 	}
@@ -67,7 +67,7 @@ public final class Select<T> extends QueryableAction<T> {
 		}
 
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(getGenericType(), null, CommandMode.Select, entityObject(), 0, 0, false, blobMap);
+		String sql = getParser().toString(this.genericType, null, CommandMode.Select, this.entityObject(), 0, 0, false, blobMap);
 		sql = String.format("ALTER VIEW [%s] AS %s", viewName, sql);
 		DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
 	}

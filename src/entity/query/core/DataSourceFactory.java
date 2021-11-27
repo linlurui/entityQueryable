@@ -12,24 +12,31 @@
 package entity.query.core;
 
 import entity.query.annotation.DBConfig;
+import entity.query.annotation.Tablename;
 import entity.tool.util.NumberUtils;
+import entity.tool.util.ReflectionUtils;
 import entity.tool.util.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public final class DataSourceFactory {
 
-	private static final Logger log = LogManager.getLogger( DataSourceFactory.class );
+	private static final Logger log = LoggerFactory.getLogger( DataSourceFactory.class );
 
 	private static final String regexUrl = "jdbc:(mysql|mariadb|sqlserver|db2|oracle|couchbase|derby|hive2|postgresql|sybase|sqlite|microsoft:sqlserver)(:\\w+:)?@?:?(//|\\(|:)?([\\w+\\.\\-_]+|\\w:)(:\\d+)?(/|;\\s*DatabaseName=|:|[\\w=\\(\\)\\s]+)([\\w\\-_\\.]+)";
 
@@ -72,10 +79,10 @@ public final class DataSourceFactory {
 	public <T> DataSource getDataSource(Class<T> clazz) throws Exception {
 		DataSourceFactory conf = DataSourceFactory.getInstance();
 		DataSource ds;
-		entity.query.annotation.DataSource dataSourceAnn = clazz.getAnnotation(entity.query.annotation.DataSource.class);
+		String dsname = findDataSourceAnnotation(clazz);
 		DBConfig configAnn = clazz.getAnnotation(DBConfig.class);
-		if(dataSourceAnn != null && StringUtils.isNotEmpty(dataSourceAnn.value())) {
-			ds = conf.getDataSource(dataSourceAnn.value());
+		if(StringUtils.isNotEmpty(dsname)) {
+			ds = conf.getDataSource(dsname);
 		} else if(configAnn != null) {
 			ds = conf.getDataSource(configAnn);
 		}
@@ -89,6 +96,50 @@ public final class DataSourceFactory {
 		}
 
 		return ds;
+	}
+
+	public static <T> String findDataSourceAnnotation(Class<T> clazz) {
+		entity.query.annotation.DataSource ann = clazz.getAnnotation(entity.query.annotation.DataSource.class);
+		String ds = "";
+		if(ann==null && clazz.getAnnotations()!=null && clazz.getAnnotations().length>0) {
+			for (Annotation item : clazz.getAnnotations()) {
+				if(ann!=null) {
+					break;
+				}
+				List<Annotation> list = Arrays.stream(item.annotationType().getAnnotations()).collect(Collectors.toList());
+				for(int i=0; i<list.size(); i++) {
+					if(StringUtils.isNotEmpty(ds)) {
+						break;
+					}
+					if (list.get(i) instanceof entity.query.annotation.DataSource) {
+						String value = ReflectionUtils.invoke(item.getClass(), item, "dataSource").toString();
+						ann = (entity.query.annotation.DataSource) list.get(i);
+						//InvocationHandler handler = Proxy.getInvocationHandler(ann1);
+						//Field field = handler.getClass().getDeclaredField("memberValues");
+						// 因为这个字段为 private final修饰所以要打开权限
+						//field.setAccessible(true);
+						// 获取memberValues
+						//Map memberValues = (Map) field.get(handler);
+						if(StringUtils.isNotEmpty(value)) {
+							// 修改 value 属性值
+							//memberValues.put("value", value);
+							ds = value;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		if(StringUtils.isNotEmpty(ds)) {
+			return ds;
+		}
+
+		if(ann == null) {
+			return "";
+		}
+
+		return ann.value();
 	}
 
 	private void fillDatasourceByYaml() {
@@ -117,7 +168,7 @@ public final class DataSourceFactory {
 					continue;
 				}
 
-				Map<String, String> item = (Map<String, String>) obj.getValue();
+				Map<String, Object> item = (Map<String, Object>) obj.getValue();
 
 				if(!item.containsKey("driver") || item.get("driver") == null) {
 					continue;
@@ -135,16 +186,16 @@ public final class DataSourceFactory {
 
 				dataSource.setId(obj.getKey());
 				if(item.containsKey("classScope") && item.get("classScope")!=null) {
-					dataSource.setClassScope(item.get("classScope"));
+					dataSource.setClassScope(StringUtils.toString(item.get("classScope")));
 				}
 
 				if(item.containsKey("rxjava2") && item.get("rxjava2")!=null) {
 					dataSource.setRxjava2("true".equals(item.get("rxjava2")));
 				}
 
-				dataSource.setDbType(item.get("type").toLowerCase());
-				dataSource.setDriverClassName(item.get("driver"));
-				String url = item.get("url").replaceAll("&amp;", "&");
+				dataSource.setDbType(StringUtils.toLowerCase(item.get("type")));
+				dataSource.setDriverClassName(StringUtils.toString(item.get("driver")));
+				String url = StringUtils.replaceAll(item.get("url"), "&amp;", "&");
 
 				initDatasourceConfig(dataSource);
 
@@ -162,8 +213,8 @@ public final class DataSourceFactory {
 				dataSource.setValidationQuery(getVaildationQuery(dbtype));
 				dataSource.setDbType(dbtype.toLowerCase());
 
-				dataSource.setUsername(item.get("username"));
-				dataSource.setPassword(item.get("password"));
+				dataSource.setUsername(StringUtils.toString(item.get("username")));
+				dataSource.setPassword(StringUtils.toString(item.get("password")));
 				if (item.containsKey("initialSize") && item.get("initialSize") != null) {
 					if (NumberUtils.parseInt(item.get("initialSize")) != null) {
 						dataSource.setInitialSize(NumberUtils.parseInt(item.get("initialSize")));
@@ -190,43 +241,38 @@ public final class DataSourceFactory {
 
 				if (item.containsKey("useUnfairLock") && item.get("useUnfairLock") != null) {
 					if (item.get("useUnfairLock") != null) {
-						dataSource.setUseUnfairLock(Boolean.valueOf(item.get("useUnfairLock")));
+						dataSource.setUseUnfairLock(Boolean.parseBoolean(StringUtils.toString(item.get("useUnfairLock"))));
 					}
 				}
 
 				if (item.containsKey("maxOpenPreparedStatements") && item.get("maxOpenPreparedStatements") != null) {
 					dataSource.setPoolPreparedStatements(false);
-					if (item.get("maxOpenPreparedStatements") != null) {
-						int value = NumberUtils.parseInt(item.get("maxOpenPreparedStatements"));
-						dataSource.setMaxOpenPreparedStatements(value);
-						if (value > 0) {
-							dataSource.setPoolPreparedStatements(true);
-						}
+					int value = NumberUtils.parseInt(StringUtils.toString(item.get("maxOpenPreparedStatements")));
+					dataSource.setMaxOpenPreparedStatements(value);
+					if (value > 0) {
+						dataSource.setPoolPreparedStatements(true);
 					}
 				}
 
 				if (item.containsKey("validationQuery") && item.get("validationQuery") != null) {
-					if (StringUtils.isNotEmpty(item.get("validationQuery"))) {
-						dataSource.setValidationQuery(item.get("validationQuery"));
-					}
+					dataSource.setValidationQuery(StringUtils.toString(item.get("validationQuery")));
 				}
 
 				if (item.containsKey("validationQueryTimeout") && item.get("validationQueryTimeout") != null) {
-					if (item.get("validationQueryTimeout") != null) {
-						dataSource.setValidationQueryTimeout(NumberUtils.parseInt(item.get("validationQueryTimeout")));
-					}
+					dataSource.setValidationQueryTimeout(NumberUtils.parseInt(item.get("validationQueryTimeout")));
+				}
+				else if("sqlserver".equals(dataSource.getDbType())) {
+					dataSource.setValidationQueryTimeout(10);
 				}
 
 				if (item.containsKey("minEvictableIdleTimeMillis") && item.get("minEvictableIdleTimeMillis") != null) {
-					if (item.get("minEvictableIdleTimeMillis") != null) {
-						dataSource.setMinEvictableIdleTimeMillis(Long.valueOf(item.get("minEvictableIdleTimeMillis")));
-					}
+					dataSource.setMinEvictableIdleTimeMillis(Long.parseLong(StringUtils.toString(item.get("minEvictableIdleTimeMillis"))));
 				}
 
 				if (item.containsKey("filters") && item.get("filters") != null) {
-					if (StringUtils.isNotEmpty(item.get("filters"))) {
+					if (StringUtils.isNotEmpty(StringUtils.toString(item.get("filters")))) {
 						try {
-							dataSource.setFilters(item.get("filters"));
+							dataSource.setFilters(StringUtils.toString(item.get("filters")));
 						} catch (SQLException e) {
 							log.error(e.getMessage(), e);
 						}
@@ -262,10 +308,13 @@ public final class DataSourceFactory {
 		dataSource.setTestOnBorrow(false);
 		dataSource.setTestOnReturn(false);
 		dataSource.setTestWhileIdle(true);
-		dataSource.setRemoveAbandoned(true);
-		dataSource.setRemoveAbandonedTimeout(1800);
-		dataSource.setLogAbandoned(true);
 		dataSource.setTimeBetweenLogStatsMillis(120000);
+
+		if("true".equals(ApplicationConfig.getInstance().get("${entity.debug}", ""))) {
+			dataSource.setRemoveAbandoned(true);
+			dataSource.setRemoveAbandonedTimeout(1800);
+			dataSource.setLogAbandoned(true);
+		}
 
 		if(StringUtils.isNotEmpty(dataSource.getDbType()) && "|couchbase|derby|hive|mysql|mariadb|postgresql|sqlite|".contains(dataSource.getDbType())) {
 			dataSource.setPoolPreparedStatements(false);
@@ -275,13 +324,13 @@ public final class DataSourceFactory {
 			dataSource.setPoolPreparedStatements(true);
 			dataSource.setMaxPoolPreparedStatementPerConnectionSize(20);
 		}
-		dataSource.setTimeBetweenEvictionRunsMillis(600000);
+		dataSource.setTimeBetweenEvictionRunsMillis(60000);
 		dataSource.setKeepAlive(true);
 		dataSource.setInitialSize(5);
-		dataSource.setMaxActive(10);
+		dataSource.setMaxActive(100);
 		dataSource.setMinIdle(5);
-		dataSource.setMaxWait(10000);
-		dataSource.setMinEvictableIdleTimeMillis(300000);
+		dataSource.setMaxWait(60000);
+		dataSource.setMinEvictableIdleTimeMillis(180000);
 	}
 
 	private void loadXmlConfig(String xmlFileName) throws SQLException, IOException, JDOMException {
@@ -511,28 +560,28 @@ public final class DataSourceFactory {
 			return new FileInputStream(file);
 		}
 		else {
-			file = new File(System.getProperty("user.dir") + "/conf/" + xmlFileName);
+			file = new File(System.getProperty("user.dir") + File.separator + "conf" + File.separator + xmlFileName);
 		}
 
 		if(file.exists()) {
 			return new FileInputStream(file);
 		}
 		else {
-			file = new File(System.getProperty("user.dir") + "/config/" + xmlFileName);
+			file = new File(System.getProperty("user.dir") + File.separator + "config" + File.separator + xmlFileName);
 		}
 
 		if(file.exists()) {
 			return new FileInputStream(file);
 		}
 		else {
-			file = new File(System.getProperty("user.dir") + "/" + xmlFileName);
+			file = new File(System.getProperty("user.dir") + File.separator + xmlFileName);
 		}
 
 		if(file.exists()) {
 			return new FileInputStream(file);
 		}
 		else {
-			file = new File(System.getProperty("user.dir") + "/resources/" + xmlFileName);
+			file = new File(System.getProperty("user.dir") + File.separator + "resources" + File.separator + xmlFileName);
 		}
 
 		if(file.exists()) {
@@ -592,12 +641,12 @@ public final class DataSourceFactory {
 			}
 
 			if(ann.port() > 0 &&
-					!ann.db().isEmpty() &&
-					!ann.driverType().isEmpty() &&
-					!ann.dbType().isEmpty() &&
-					!ann.uid().isEmpty() &&
-					!ann.pwd().isEmpty() &&
-					!ann.server().isEmpty()) {
+					!StringUtils.isEmpty(ann.db()) &&
+					!StringUtils.isEmpty(ann.driverType()) &&
+					!StringUtils.isEmpty(ann.dbType()) &&
+					!StringUtils.isEmpty(ann.uid()) &&
+					!StringUtils.isEmpty(ann.pwd()) &&
+					!StringUtils.isEmpty(ann.server())) {
 
 
 				if(dataSourceMap.containsKey(ann.id())) {
@@ -719,7 +768,7 @@ public final class DataSourceFactory {
 	public DataSource getDataSource(String id, String path) throws SQLException {
 
 		boolean flag = false;
-		if (StringUtils.isEmpty(id)) {
+		if (StringUtils.isEmpty(id) || id == "default") {
 			id = default_id;
 			flag = true;
 		}
@@ -732,9 +781,9 @@ public final class DataSourceFactory {
 			fillDatasourceByYaml();
 			loadXmlConfig(path);
 		} catch (IOException e) {
-			log.error(e);
+			log.error(e.getMessage(), e);
 		} catch (JDOMException e) {
-			log.error(e);
+			log.error(e.getMessage(), e);
 		}
 
 //		waittingDataSource(500);

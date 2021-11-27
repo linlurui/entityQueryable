@@ -84,38 +84,25 @@ public class MysqlParser extends SqlParserBase {
 				selectText = "COUNT(*)";
 			}
 			else {
-				selectText = primaryKey.isEmpty() ? "COUNT(*)" : String.format("COUNT(%s)", primaryKey);
+				selectText = StringUtils.isEmpty(primaryKey) ? "COUNT(*)" : String.format("COUNT(%s)", primaryKey);
 			}
 		} else {
 			selectText = container.Select.length()>0 ? container.Select.toString() : "*";
 		}
 
 		String fromText = "";
-		if(container.From.length()>0) {
-			fromText = container.From.toString();
-		}
-
-		else {
-			OutParameter<Class<T>> param = new OutParameter<Class<T>>();
-			param.setData(clazz);
-			String tablename = getTablename(param);
-			clazz = param.getData();
-			fromText = tablename;
-		}
+		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
+		param.setData(clazz);
+		String tablename = getTablename(param);
+		clazz = param.getData();
+		fromText = tablename;
 
 		String alias = "";
-		if(container.From.length()>0) {
-			String[] arr = container.From.toString().toLowerCase().split("as");
-			alias = arr[arr.length - 1];
-		}
+		param = new OutParameter<Class<T>>();
+		param.setData(clazz);
+		 tablename = getTablename(param);
+		alias = tablename;
 
-		else{
-			OutParameter<Class<T>> param = new OutParameter<Class<T>>();
-			param.setData(clazz);
-			String tablename = getTablename(param);
-			clazz = param.getData();
-			alias = tablename;
-		}
 		String whereText = container.Where.length()>0 ? String.format("WHERE %s", container.Where.toString()) : "";
 		String joinText = "";
 		for(int i=0; i<container.Join.size(); i++) {
@@ -128,7 +115,7 @@ public class MysqlParser extends SqlParserBase {
 		String orderByText = container.OrderBy.length()>0 ? String.format(" ORDER BY %s", container.OrderBy.toString()) : "";
 
 		String sql = "";
-		if(!primaryKey.isEmpty() && container.From.length()==0 && skip>0) {
+		if(!StringUtils.isEmpty(primaryKey) && container.From.length()==0 && skip>0) {
 			if(selectText.equals("*")) {
 				selectText = fromText + ".*";
 			}
@@ -184,12 +171,12 @@ public class MysqlParser extends SqlParserBase {
 	@Override
 	public String getColumnInfoListSql(String tablename)
 	{
-		return String.format( "select column_name,column_comment,data_type, case EXTRA when 'auto_increment' then 1 else 0 end as isAutoIncrement from information_schema.columns where table_name='%s' and table_schema='%s'", tablename, schema() );
+		return String.format( "select COLUMN_NAME as column_name,COLUMN_COMMENT as column_comment,DATA_TYPE as data_type, case EXTRA when 'auto_increment' then 1 else 0 end as isAutoIncrement from information_schema.COLUMNS where TABLE_NAME='%s' and TABLE_SCHEMA='%s'", tablename, schema() );
 	}
 
 	@Override
 	public String getPrimaryKeySpl(String tablename) {
-		return String.format( "SELECT COLUMN_NAME FROM information_schema.table_constraints t JOIN information_schema.key_column_usage k USING (constraint_name,table_schema,table_name) WHERE t.constraint_type='PRIMARY KEY' AND t.table_name='%s' AND t.table_schema='%s'", tablename, schema() );
+		return String.format( "SELECT COLUMN_NAME FROM information_schema.TABLE_CONSTRAINTS t JOIN information_schema.KEY_COLUMN_USAGE k USING (CONSTRAINT_NAME,TABLE_SCHEMA,TABLE_NAME) WHERE t.CONSTRAINT_TYPE='PRIMARY KEY' AND t.TABLE_NAME='%s' AND t.TABLE_SCHEMA='%s'", tablename, schema() );
 	}
 
 
@@ -228,7 +215,7 @@ public class MysqlParser extends SqlParserBase {
 					getPrefix() + StringUtils.join(getSuffix() + "," + getPrefix(), uniqueList) + getSuffix()));
 		}
 
-		return String.format("CREATE TABLE `%s` (%s) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;", tablename, sb.substring(1));
+		return String.format("CREATE TABLE `%s` (%s) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;", tablename, sb.substring(1));
 	}
 
 	private String fillBuildColumnString(StringBuffer sb, ColumnInfo col, boolean isAlter) {
@@ -284,6 +271,19 @@ public class MysqlParser extends SqlParserBase {
 
         if(!isAlter) {
 
+			if(StringUtils.isNotEmpty(col.getDefaultValue())) {
+				if(col.getDataType() != null &&
+						("INTEGER".equals(col.getDataType().toUpperCase()) ||
+								"LONG".equals(col.getDataType().toUpperCase()) ||
+								"INT".equals(col.getDataType().toUpperCase()) ||
+								"BIGINT".equals(col.getDataType().toUpperCase()) ) ) {
+					sb.append(String.format(" default %s ", col.getDefaultValue()));
+				}
+				else {
+					sb.append(String.format(" default '%s' ", col.getDefaultValue()));
+				}
+			}
+
 			if(col.isPrimaryKey() && col.getDataType() != null &&
 					("INTEGER".equals(col.getDataType().toUpperCase()) ||
 							"LONG".equals(col.getDataType().toUpperCase()) ||
@@ -338,7 +338,7 @@ public class MysqlParser extends SqlParserBase {
 
 	@Override
 	public <T> String getTableExistSql(String tablename) {
-		String sql = String.format("select count(TABLE_NAME) from INFORMATION_SCHEMA.TABLES where TABLE_SCHEMA='%s' and TABLE_NAME='%s';", this.dataSource.getId(), tablename);
+		String sql = String.format("select count(TABLE_NAME) from information_schema.TABLES where TABLE_SCHEMA='%s' and TABLE_NAME='%s';", this.dataSource.getId(), tablename);
 
 		return sql;
 	}

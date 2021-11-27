@@ -13,13 +13,14 @@
 package entity.query.core.executor;
 
 
+import entity.query.core.DataSource;
 import entity.query.core.IDataActuator;
 import entity.query.core.ISqlParser;
 import entity.query.enums.CommandMode;
 import entity.tool.util.ReflectionUtils;
 import entity.tool.util.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Blob;
 import java.sql.SQLException;
@@ -32,7 +33,7 @@ import java.util.concurrent.Callable;
 public class BatchExecutor<T> implements Callable<List<T>>
 {
 
-    private static final Logger log = LogManager.getLogger( BatchExecutor.class );
+    private static final Logger log = LoggerFactory.getLogger( BatchExecutor.class );
 
     private List<T> data;
     private IDataActuator dataActuator;
@@ -81,9 +82,10 @@ public class BatchExecutor<T> implements Callable<List<T>>
                         count = 1;
                     }
 
-                    if ( this.dataActuator.dataSource() != null )
+                    DataSource ds = this.dataActuator.dataSource();
+                    if ( ds != null )
                     {
-                        ReflectionUtils.setFieldValue( clazz, item, "dataSource", this.dataActuator.dataSource() );
+                        ReflectionUtils.setFieldValue( clazz, item, "dataSource", ds );
                     }
                     Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
                     sql = iParser.toString( clazz, exp, mode, ReflectionUtils.invoke( clazz, item, "entityObject" ), 0, 0, false, blobMap );

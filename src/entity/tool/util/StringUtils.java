@@ -67,7 +67,7 @@ public final class StringUtils
     {
         List<Integer> ret = new ArrayList<Integer>();
 
-        if ( parameter == null || parameter.isEmpty() )
+        if ( parameter == null || StringUtils.isEmpty(parameter) )
         {
             return ret;
         }
@@ -115,7 +115,7 @@ public final class StringUtils
     {
         List<String> ret = new ArrayList<String>();
 
-        if ( parameter == null || parameter.isEmpty() )
+        if ( parameter == null || StringUtils.isEmpty(parameter) )
         {
             return ret;
         }
@@ -221,12 +221,30 @@ public final class StringUtils
                 boolean isNumber = Pattern.compile("^\\d+$").matcher(value).find();
                 Object instance = Class.forName(type.getName());
                 String name = value;
+                T[] enums = type.getEnumConstants();
                 if (isNumber) {
                     Method m = type.getMethod("values");
-                    for(Object item : (Object[]) m.invoke(instance)) {
-                        Integer i = Integer.parseInt(value);
-                        if(i.equals(ReflectionUtils.invoke(item.getClass(), item, "getCode"))) {
-                            name = ReflectionUtils.invoke(item.getClass(), item, "getValue").toString();
+                    Object[] items = (Object[]) m.invoke(instance);
+                    for(int i=0; i<items.length; i++) {
+                        try {
+                            if (value.equals(ReflectionUtils.invoke(items[i].getClass(), items[i], "getValue").toString())) {
+                                return enums[i];
+                            }
+                        }
+                        catch (Exception e) {}
+
+                        try {
+                            if (value.equals(ReflectionUtils.invoke(items[i].getClass(), items[i], "getCode").toString())) {
+                                return enums[i];
+                            }
+                        }
+                        catch (Exception e) {}
+                    }
+                }
+                else {
+                    for (T enumObj : enums) {
+                        if (value.toLowerCase().equals(String.valueOf(enumObj).toLowerCase())) {
+                            return enumObj;
                         }
                     }
                 }
@@ -371,5 +389,25 @@ public final class StringUtils
         }
 
         return value;
+    }
+
+    public static String toString(Object value) {
+        if(value == null) {
+            return "";
+        }
+
+        return value.toString();
+    }
+
+    public static String toLowerCase(Object value) {
+        return toString(value).toLowerCase();
+    }
+
+    public static String toUpperCase(Object value) {
+        return toString(value).toUpperCase();
+    }
+
+    public static String replaceAll(Object value, String oldChar, String newChar) {
+        return toString(value).replaceAll(oldChar, newChar);
     }
 }

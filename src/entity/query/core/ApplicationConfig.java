@@ -14,19 +14,17 @@ package entity.query.core;
 
 import entity.tool.util.JsonUtils;
 import entity.tool.util.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.net.URL;
+import java.util.*;
 
 
 public class ApplicationConfig  {
 
-    private static final Logger log = LogManager.getLogger(ApplicationConfig.class);
+    private static final Logger log = LoggerFactory.getLogger(ApplicationConfig.class);
 
     private final static Map<String, String> configMap = new HashMap<String, String>();
 
@@ -65,8 +63,24 @@ public class ApplicationConfig  {
 
             map = yml.loadAs(configStream, HashMap.class);
 
+            InputStream configStream2 = getApplicationConfigByResource();
+
+            if(configStream2 != null) {
+                Map map2 = yml.loadAs(configStream2, HashMap.class);
+                fillKeyValue("", map2);
+            }
             fillKeyValue("", map);
         }
+    }
+
+    private Map fillPropertys(Map srcProperties, Map targetProperties) {
+        for(Object key : srcProperties.keySet()) {
+            if(!targetProperties.containsKey(key)) {
+                targetProperties.put(key, srcProperties.get(key));
+            }
+        }
+
+        return targetProperties;
     }
 
     private InputStream getApplicationConfigStream() throws FileNotFoundException {
@@ -83,70 +97,70 @@ public class ApplicationConfig  {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/conf/application.yml");
+            file = new File(System.getProperty("user.dir") + File.separator+"conf"+File.separator+"application.yml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/conf/application.yaml");
+            file = new File(System.getProperty("user.dir") + File.separator+"conf"+File.separator+"application.yaml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/config/application.yml");
+            file = new File(System.getProperty("user.dir") + File.separator+"config"+File.separator+"application.yml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/config/application.yaml");
+            file = new File(System.getProperty("user.dir") + File.separator+"config"+File.separator+"application.yaml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/application.yaml");
+            file = new File(System.getProperty("user.dir") + File.separator+"application.yaml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/application.yml");
+            file = new File(System.getProperty("user.dir") + File.separator+"application.yml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/resources/application.yml");
+            file = new File(System.getProperty("user.dir") + File.separator+"resources"+File.separator+"application.yml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/resources/application.yaml");
+            file = new File(System.getProperty("user.dir") + File.separator+"resources"+File.separator+"application.yaml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/src/main/resources/application.yml");
+            file = new File(System.getProperty("user.dir") + File.separator+"src"+File.separator+"main"+File.separator+"resources"+File.separator+"application.yml");
         }
 
         if(file.exists()) {
             return new FileInputStream(file);
         }
         else {
-            file = new File(System.getProperty("user.dir") + "/src/main/resources/application.yaml");
+            file = new File(System.getProperty("user.dir") + File.separator+"src"+File.separator+"main"+File.separator+"resources"+File.separator+"application.yaml");
         }
 
         if(file.exists()) {
@@ -159,6 +173,38 @@ public class ApplicationConfig  {
         catch (Exception e) {
             return Thread.currentThread().getContextClassLoader().getResourceAsStream("application.yaml");
         }
+    }
+
+    public InputStream getApplicationConfigByResource() throws FileNotFoundException {
+        URL url = this.getClass().getClassLoader().getResource("application.yml");
+        if(url == null) {
+            return null;
+        }
+        String path = url.getPath();
+        File file = new File(path);
+        if(file.exists()) {
+            return new FileInputStream(file);
+        }
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.yml");
+        if(inputStream != null) {
+            return inputStream;
+        }
+
+        url = this.getClass().getClassLoader().getResource("application.yaml");
+        if(url == null) {
+            return null;
+        }
+        path = url.getPath();
+        file = new File(path);
+        if(file.exists()) {
+            return new FileInputStream(file);
+        }
+        inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.yaml");
+        if(inputStream != null) {
+            return inputStream;
+        }
+
+        return null;
     }
 
     private synchronized void fillKeyValue(String key, Map<String, Object> map) {

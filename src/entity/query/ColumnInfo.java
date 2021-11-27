@@ -144,6 +144,10 @@ public class ColumnInfo implements Serializable {
 		this.type = type;
 	}
 
+	public void setType(String dataType) {
+		this.dataType = dataType;
+	}
+
 	private boolean canNotNull;
 
 	public boolean isCanNotNull() {

@@ -15,15 +15,14 @@ package entity.query;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import entity.query.core.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 
 public final class Join<T> implements IDataActuator {
 
-	private static final Logger log = LogManager.getLogger(Queryable.class);
+	private static final Logger log = LoggerFactory.getLogger(Queryable.class);
 	protected Join(DataSource ds) {
 		dataSource = ds;
 	}
@@ -88,6 +87,14 @@ public final class Join<T> implements IDataActuator {
 	protected Class<T> genericType;
 	public Class<T> getGenericType(){
 		return genericType;
+	}
+
+	protected void finalize() {
+		parser = null;
+		entityObject = null;
+		genericType = null;
+		connection = null;
+		dataSource = null;
 	}
 
 	public On<T> on(String exp) {

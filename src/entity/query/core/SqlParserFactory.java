@@ -14,15 +14,15 @@ package entity.query.core;
 import entity.query.annotation.DBConfig;
 import entity.query.core.parser.*;
 import entity.tool.util.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SqlParserFactory<T> {
 	
-	private static final Logger log = LogManager.getLogger( SqlParserFactory.class );
+	private static final Logger log = LoggerFactory.getLogger( SqlParserFactory.class );
 	
 	private SqlParserFactory() {
 		
@@ -48,10 +48,10 @@ public class SqlParserFactory<T> {
 		
 		String type = null;
 		DataSource ds = null;
-		entity.query.annotation.DataSource dataSourceAnn = clazz.getAnnotation(entity.query.annotation.DataSource.class);
+		String dsname = DataSourceFactory.findDataSourceAnnotation(clazz);
 		DBConfig ann = clazz.getAnnotation(DBConfig.class);
-		if(dataSourceAnn != null) {
-			ds = DataSourceFactory.getInstance().getDataSource(dataSourceAnn.value());
+		if(StringUtils.isNotEmpty(dsname)) {
+			ds = DataSourceFactory.getInstance().getDataSource(dsname);
 			type = getDBType(ds);
 		}
 		else if(ann != null) {
@@ -78,7 +78,7 @@ public class SqlParserFactory<T> {
 			}
 		}
 
-		if(type.isEmpty()) {
+		if(StringUtils.isEmpty(type)) {
 			return null;
 		}
 

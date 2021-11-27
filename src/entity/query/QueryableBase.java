@@ -20,12 +20,11 @@ import entity.query.enums.JoinMode;
 import entity.tool.util.DBUtils;
 import entity.tool.util.OutParameter;
 import entity.tool.util.StringUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Blob;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -33,19 +32,16 @@ import java.util.Map;
 
 public abstract class QueryableBase<T> implements IDataActuator {
 
-	private static final Logger log = LogManager.getLogger(Queryable.class);
+	private static final Logger log = LoggerFactory.getLogger(Queryable.class);
 
 	@SuppressWarnings("unchecked")
 	protected QueryableBase() {
-		genericType = (Class<T>) this.getClass();
 	}
 
 	protected QueryableBase(DBTransaction transaction) {
-		genericType = (Class<T>) this.getClass();
 		this.transaction = transaction;
 	}
 
-	@SuppressWarnings({"unchecked", "rawtypes"})
 	protected void init(Class<T> clazz, Object obj, IDataActuator dataActuator) {
 		genericType = clazz;
 		SqlParserFactory factory = SqlParserFactory.getInstance();
@@ -58,7 +54,7 @@ public abstract class QueryableBase<T> implements IDataActuator {
 				this.connection = dataActuator.getConnection();
 			}
 		} catch (Exception e) {
-			log.error(e);
+			log.error(e.getMessage(), e);
 		}
 		if(dataSource == null && parser != null) {
 			SqlParserBase parserBase = (SqlParserBase) parser;
@@ -120,6 +116,15 @@ public abstract class QueryableBase<T> implements IDataActuator {
 	protected Class<T> genericType;
 	protected Class<T> getGenericType(){
 		return genericType;
+	}
+
+	protected void finalize() {
+		parser = null;
+		entityObject = null;
+		genericType = null;
+		connection = null;
+		transaction = null;
+		dataSource = null;
 	}
 
 	public String tablename() {

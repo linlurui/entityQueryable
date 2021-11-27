@@ -23,15 +23,14 @@ import entity.tool.util.Callback;
 import entity.tool.util.DBUtils;
 import entity.tool.util.JsonUtils;
 import io.reactivex.Flowable;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static entity.tool.util.DBUtils.*;
 import static entity.tool.util.StringUtils.isEmpty;
@@ -39,7 +38,7 @@ import static entity.tool.util.StringUtils.isEmpty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class Queryable<T> extends QueryableBase<T> implements Serializable {
 
-	private static final Logger log = LogManager.getLogger(Queryable.class);
+	private static final Logger log = LoggerFactory.getLogger(Queryable.class);
 
 	@SuppressWarnings("unchecked")
 	public Queryable() {
@@ -54,7 +53,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 	public From<T> from(QueryableAction<T> queryable, String alias) {
 		From<T> clause = new From<T>();
-		clause.init(getGenericType(), entityObject(), this);
+		clause.init(this.genericType, this.entityObject(), this);
 		clause.getParser().addFrom(String.format( "( %s )", queryable.toString(CommandMode.Select) ), alias);
 
 		return clause;
@@ -62,7 +61,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 	public <E> From<T> from(String tableName) {
 	    From<T> clause = new From<T>();
-	    clause.init(getGenericType(), entityObject(), this);
+	    clause.init(this.genericType, this.entityObject(), this);
 	    clause.getParser().addFrom(tableName, "");
 
 	    return clause;
@@ -87,7 +86,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 	 */
 	public String toString(CommandMode commandMode) {
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(getGenericType(), "", commandMode, entityObject(), 0, 0, false, blobMap);
+		String sql = getParser().toString(this.genericType, "", commandMode, this.entityObject(), 0, 0, false, blobMap);
 
 		return sql;
 	}
@@ -95,14 +94,14 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 	public Integer insert() throws SQLException {
 
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(getGenericType(), "", CommandMode.Insert, entityObject(), 0, 0, false, blobMap);
+		String sql = getParser().toString(this.genericType, "", CommandMode.Insert, this.entityObject(), 0, 0, false, blobMap);
 		Integer id = DBExecutorAdapter.createExecutor(this).execute(sql, blobMap);
 
 		return id==null ? 0 : id;
 	}
 
 	public boolean delete() throws SQLException {
-		String sql = getParser().toString(getGenericType(), "", CommandMode.Delete, entityObject(), 0, 0, false, null);
+		String sql = getParser().toString(this.genericType, "", CommandMode.Delete, this.entityObject(), 0, 0, false, null);
 		Integer row = DBExecutorAdapter.createExecutor(this).execute(sql, null);
 
 		return row!=null && row.intValue()>0;
@@ -110,7 +109,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 	public boolean update() throws SQLException {
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(getGenericType(), "", CommandMode.Update, entityObject(), 0, 0, false, blobMap);
+		String sql = getParser().toString(this.genericType, "", CommandMode.Update, this.entityObject(), 0, 0, false, blobMap);
 		Integer row = DBExecutorAdapter.createExecutor(this).execute(sql, blobMap);
 
 		return row!=null && row.intValue()>0;
@@ -157,7 +156,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 		}
 
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = ac.getParser().toString(getGenericType(), expText, CommandMode.UpdateFrom, entityObject(), 0, 0, false, blobMap);
+		String sql = ac.getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
 		Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
 
 		return row!=null && row > 0;
@@ -166,7 +165,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 	public Flowable<Integer> asyncInsert() throws Exception {
 
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(getGenericType(), "", CommandMode.Insert, entityObject(), 0, 0, false, blobMap);
+		String sql = getParser().toString(this.genericType, "", CommandMode.Insert, this.entityObject(), 0, 0, false, blobMap);
 
 		Flowable<Integer> flowable = DBExecutorAdapter.createExecutor(this).flowable(sql, blobMap);
 
@@ -174,7 +173,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 	}
 
 	public Flowable<Integer> asyncDelete() throws Exception {
-		String sql = getParser().toString(getGenericType(), "", CommandMode.Delete, entityObject(), 0, 0, false, null);
+		String sql = getParser().toString(this.genericType, "", CommandMode.Delete, this.entityObject(), 0, 0, false, null);
 
 		Flowable<Integer> flowable = DBExecutorAdapter.createExecutor(this).flowable(sql, null);
 
@@ -183,7 +182,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 	public Flowable<Integer> asyncUpdate() throws Exception {
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(getGenericType(), "", CommandMode.Update, entityObject(), 0, 0, false, blobMap);
+		String sql = getParser().toString(this.genericType, "", CommandMode.Update, this.entityObject(), 0, 0, false, blobMap);
 
 		Flowable<Integer> flowable = DBExecutorAdapter.createExecutor(this).flowable(sql, blobMap);
 
@@ -222,15 +221,15 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
     }
 
 	public void batchInsert(List<T> list, Callback<List<T>> call) throws Exception {
-		batchTask(list, getGenericType(), this, getParser(), CommandMode.Insert, null, call);
+		batchTask(list, this.genericType, this, getParser(), CommandMode.Insert, null, call);
 	}
 
 	public void batchUpdate(List<T> list, Callback<List<T>> call, String... exp) throws Exception {
-		batchTask(list, getGenericType(), this, getParser(), CommandMode.Update, exp, call);
+		batchTask(list, this.genericType, this, getParser(), CommandMode.Update, exp, call);
 	}
 
 	public void batchDelete(List<T> list, Callback<List<T>> call) throws Exception {
-		batchTask(list, getGenericType(), this, getParser(), CommandMode.Delete, null, call);
+		batchTask(list, this.genericType, this, getParser(), CommandMode.Delete, null, call);
 	}
 
     public static List<String> getTables(String dataSourceId) {
@@ -246,7 +245,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 			result = DBExecutorAdapter.createExecutor(dataSource).query(String.class, sql);
 
 		} catch (Exception e) {
-			log.error(e);
+			log.error(e.getMessage(), e);
 		}
 
 		return result;
@@ -262,7 +261,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 			String sql = SqlParserFactory.createParser(dataSource).toString(null, tablename, CommandMode.ColumnsInfo, null, 0, 0, false, null);
 			result = DBExecutorAdapter.createExecutor(dataSource).query(ColumnInfo.class, sql);
 		} catch (Exception e) {
-			log.error(e);
+			log.error(e.getMessage(), e);
 		}
 
 		return result;
@@ -291,7 +290,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 				result = DBExecutorAdapter.createExecutor(dataSource).first(String.class, sql);
 			}
 		} catch (Exception e) {
-			log.error(e);
+			log.error(e.getMessage(), e);
 		}
 
 		return result;

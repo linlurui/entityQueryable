@@ -11,6 +11,7 @@
 
 package entity.query.core.executor;
 
+import entity.query.core.DataSource;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
@@ -21,6 +22,8 @@ import java.sql.SQLException;
 import java.util.*;
 
 public interface IDBExecutor {
+
+    DataSource getDatasource() throws SQLException;
 
     Connection getConnection() throws SQLException;
 
