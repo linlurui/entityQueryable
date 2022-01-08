@@ -6,7 +6,7 @@
     <p align="left">
 EntityQueryable是Java开如平台下轻量级ORM, 支持多数据库映射操作的开源ORM库, 兼容mybatis配置,支持联表查询、异步批量插入、更新、删除,内置阿里的Druid数据库连接池支持数据库mysql/mariadb/sqlserver/sqlite/oracle/postgresql,以及集成了rxjava2-jdbc(默认不开启),可以支持响应式的异步非阻塞IO操作数据; 
 </p>
-    <img align="right" src="https://github.com/linlurui/entityQueryable/blob/main/pay5.jpg" alt="捐赠给作者"  width="200">
+    <img align="right" src="https://gitee.com/ccait/dapperq/raw/master/pay5.jpg" alt="捐赠给作者"  width="200">
     <p align="right">
         <em>捐赠给作者</em>
     </p>
@@ -44,21 +44,27 @@ EntityQueryable是Java开如平台下轻量级ORM, 支持多数据库映射操�
 
  ### 2.Add the jar package by maven
 ```xml
-     <repositories>
+    <repositories>
         <repository>
-            <id>entityQueryable</id>
-            <url>https://raw.github.com/linlurui/entityQueryable/snapshots</url>
-            <snapshots>
-                <enabled>true</enabled>
+            <id>gitee</id>
+            <url>https://gitee.com/ccait/entityqueryable/raw/v1.0</url>
+            <releases>
                 <updatePolicy>always</updatePolicy>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <updatePolicy>always</updatePolicy>
+                <enabled>true</enabled>
+                <checksumPolicy>ignore</checksumPolicy>
             </snapshots>
         </repository>
     </repositories>
+    
     <dependencies>
         <dependency>
             <groupId>entity.queryable</groupId>
             <artifactId>entity.queryable</artifactId>
-            <version>3.0-SNAPSHOT</version>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
     <dependencies>
 ```

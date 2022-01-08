@@ -207,7 +207,7 @@ public abstract class QueryableAction<T> implements IDataActuator
     public boolean exist() throws SQLException {
         String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 1, false, null );
         T result = DBExecutorAdapter.createExecutor(this, getGenericType()).first(getGenericType(), sql);
-        return (result == null? false: true);
+        return ( result == null? false: true );
     }
 
     @Override
