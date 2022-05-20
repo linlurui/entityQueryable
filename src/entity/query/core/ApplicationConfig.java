@@ -26,7 +26,7 @@ public class ApplicationConfig  {
 
     private static final Logger log = LoggerFactory.getLogger(ApplicationConfig.class);
 
-    private final static Map<String, String> configMap = new HashMap<String, String>();
+    private final static Map<String, String> configMap = new HashMap<>();
 
     private static Map<String, Object> map;
 
@@ -222,6 +222,35 @@ public class ApplicationConfig  {
         }
     }
 
+    public Boolean containsKey(String key) {
+        List<String> keys = StringUtils.splitString2List(key, "\\.");
+        return this.containsKey(keys, map);
+    }
+
+    public Boolean containsKey(List<String> keys, Map<String, Object> currentMap) {
+        if(keys.size()<1) {
+            return false;
+        }
+
+        if(keys.size()==1) {
+            return currentMap.containsKey(keys.get(0));
+        }
+
+        for(Map.Entry<String, Object> entry : currentMap.entrySet()) {
+            if(entry.getKey().equals(keys.get(0))) {
+                if(entry.getValue() instanceof Map) {
+                    keys.remove(0);
+                    return this.containsKey(keys, (Map<String, Object>) entry.getValue());
+                }
+                else {
+                    return false;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public void set(String key, String value) {
         configMap.put(String.format("${%s}", key), value);
         List<String> keys = StringUtils.splitString2List(key, "\\.");
@@ -253,7 +282,7 @@ public class ApplicationConfig  {
             return defaultValue;
         }
 
-        if(configMap.containsKey(key) && StringUtils.isNotEmpty(configMap.get(key))) {
+        if(configMap.containsKey(key) && configMap.get(key)!=null && StringUtils.isNotEmpty(configMap.get(key).toString())) {
             return (T) StringUtils.cast(defaultValue.getClass(), configMap.get(key).toString());
         }
 

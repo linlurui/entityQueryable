@@ -12,7 +12,7 @@
 package entity.query.core;
 
 import entity.query.annotation.DBConfig;
-import entity.query.annotation.Tablename;
+import entity.tool.util.JsonUtils;
 import entity.tool.util.NumberUtils;
 import entity.tool.util.ReflectionUtils;
 import entity.tool.util.StringUtils;
@@ -25,9 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -142,13 +139,22 @@ public final class DataSourceFactory {
 		return ann.value();
 	}
 
-	private void fillDatasourceByYaml() {
+	private void fillDatasourceByYaml() throws IOException {
 
 		if(hasLoadedYmlConfig && dataSourceMap.size() > 0) {
 			return;
 		}
 		Object map = ApplicationConfig.getInstance().getMap("entity.datasource.environments");
-		if(map == null) {
+		if(!ApplicationConfig.getInstance().containsKey("entity.datasource.environments")) {
+			if(ApplicationConfig.getInstance().containsKey("spring.datasource.druid")) {
+				map = ApplicationConfig.getInstance().getMap("spring.datasource.druid");
+			}
+			else {
+				map = ApplicationConfig.getInstance().getMap("spring.datasource");
+			}
+		}
+
+		if(map==null) {
 			return;
 		}
 
@@ -157,141 +163,165 @@ public final class DataSourceFactory {
 			if(root.size() < 1) {
 				return;
 			}
-			for(Map.Entry<String, Object> obj : root.entrySet()) {
+			fillDataSourceFromEntityMap(root);
+			hasLoadedYmlConfig = true;
+		}
+	}
 
-				if(dataSourceMap.containsKey(obj.getKey())) {
-					continue;
-				}
+	private void fillDataSourceFromEntityMap(Map<String, Object> params) throws IOException {
+		Map<String, Object> root = JsonUtils.convert(params, Map.class);
+		for(Map.Entry<String, Object> obj : root.entrySet()) {
 
-				boolean isMap = obj.getValue() instanceof Map;
-				if(!isMap) {
-					continue;
-				}
+			if(dataSourceMap.containsKey(obj.getKey())) {
+				continue;
+			}
 
-				Map<String, Object> item = (Map<String, Object>) obj.getValue();
+			boolean isMap = obj.getValue() instanceof Map;
+			if(!isMap) {
+				if(obj.getValue() instanceof String) {
+					Map<String, Object> temp = ApplicationConfig.getInstance().getMap(obj.getValue().toString());
+					if(temp==null) {
 
-				if(!item.containsKey("driver") || item.get("driver") == null) {
-					continue;
-				}
-
-				if(!item.containsKey("url") || item.get("url") == null) {
-					continue;
-				}
-
-				if(!item.containsKey("type") || item.get("type") == null) {
-					item.put("type", "jdbc");
-				}
-
-				DataSource dataSource = new DataSource();
-
-				dataSource.setId(obj.getKey());
-				if(item.containsKey("classScope") && item.get("classScope")!=null) {
-					dataSource.setClassScope(StringUtils.toString(item.get("classScope")));
-				}
-
-				if(item.containsKey("rxjava2") && item.get("rxjava2")!=null) {
-					dataSource.setRxjava2("true".equals(item.get("rxjava2")));
-				}
-
-				dataSource.setDbType(StringUtils.toLowerCase(item.get("type")));
-				dataSource.setDriverClassName(StringUtils.toString(item.get("driver")));
-				String url = StringUtils.replaceAll(item.get("url"), "&amp;", "&");
-
-				initDatasourceConfig(dataSource);
-
-				if (url.toLowerCase().indexOf("autoreconnect=true") > 0) {
-					dataSource.setAutoReconnect(true);
-				}
-
-				else {
-					dataSource.setAutoReconnect(false);
-				}
-
-				dataSource.setSchema(getSchema(url));
-				dataSource.setUrl(url);
-				String dbtype = getDbType(url);
-				dataSource.setValidationQuery(getVaildationQuery(dbtype));
-				dataSource.setDbType(dbtype.toLowerCase());
-
-				dataSource.setUsername(StringUtils.toString(item.get("username")));
-				dataSource.setPassword(StringUtils.toString(item.get("password")));
-				if (item.containsKey("initialSize") && item.get("initialSize") != null) {
-					if (NumberUtils.parseInt(item.get("initialSize")) != null) {
-						dataSource.setInitialSize(NumberUtils.parseInt(item.get("initialSize")));
 					}
 				}
+				continue;
+			}
 
-				if (item.containsKey("maxActive") && item.get("maxActive") != null) {
-					if (NumberUtils.parseInt(NumberUtils.parseInt(item.get("maxActive"))) != null) {
-						dataSource.setMaxActive(NumberUtils.parseInt(item.get("maxActive")));
+			Map<String, Object> item = (Map<String, Object>) obj.getValue();
+			if((!item.containsKey("driver") || item.get("driver")==null) &&
+					item.containsKey("driverClassName") && item.get("driverClassName") != null &&
+					StringUtils.isNotEmpty(item.get("driverClassName").toString())) {
+				item.put("driver", item.get("driverClassName"));
+				item.remove("driverClassName");
+			}
+
+			if(!item.containsKey("driver") || item.get("driver") == null) {
+				continue;
+			}
+
+			if(!item.containsKey("url") || item.get("url") == null) {
+				continue;
+			}
+
+			if(!item.containsKey("type") || item.get("type") == null) {
+				item.put("type", "jdbc");
+			}
+
+			DataSource dataSource = new DataSource();
+
+			dataSource.setId(obj.getKey());
+			if(item.containsKey("classScope") && item.get("classScope")!=null) {
+				dataSource.setClassScope(StringUtils.toString(item.get("classScope")));
+			}
+
+			if(item.containsKey("rxjava2") && item.get("rxjava2")!=null) {
+				dataSource.setRxjava2("true".equals(item.get("rxjava2")));
+			}
+
+			dataSource.setDbType(StringUtils.toLowerCase(item.get("type")));
+			dataSource.setDriverClassName(StringUtils.toString(item.get("driver")));
+			String url = StringUtils.replaceAll(item.get("url"), "&amp;", "&");
+
+			initDatasourceConfig(dataSource);
+
+			if (url.toLowerCase().indexOf("autoreconnect=true") > 0) {
+				dataSource.setAutoReconnect(true);
+			}
+
+			else {
+				dataSource.setAutoReconnect(false);
+			}
+
+			dataSource.setSchema(getSchema(url));
+			dataSource.setUrl(url);
+			String dbtype = getDbType(url);
+			dataSource.setValidationQuery(getVaildationQuery(dbtype));
+			dataSource.setDbType(dbtype.toLowerCase());
+
+			dataSource.setUsername(StringUtils.toString(item.get("username")));
+			dataSource.setPassword(StringUtils.toString(item.get("password")));
+			if (item.containsKey("initialSize") && item.get("initialSize") != null) {
+				if (NumberUtils.parseInt(item.get("initialSize")) != null) {
+					dataSource.setInitialSize(NumberUtils.parseInt(item.get("initialSize")));
+				}
+			}
+
+			if (item.containsKey("maxActive") && item.get("maxActive") != null) {
+				if (NumberUtils.parseInt(NumberUtils.parseInt(item.get("maxActive"))) != null) {
+					dataSource.setMaxActive(NumberUtils.parseInt(item.get("maxActive")));
+				}
+			}
+
+			if (item.containsKey("minIdle") && item.get("minIdle") != null) {
+				if (NumberUtils.parseInt(NumberUtils.parseInt(item.get("minIdle"))) != null) {
+					dataSource.setMinIdle(NumberUtils.parseInt(item.get("minIdle")));
+				}
+			}
+
+			if (item.containsKey("maxWait") && item.get("maxWait") != null) {
+				if (NumberUtils.parseInt(NumberUtils.parseInt(item.get("maxWait"))) != null) {
+					dataSource.setMaxWait(NumberUtils.parseInt(item.get("maxWait")));
+				}
+			}
+
+			if (item.containsKey("useUnfairLock") && item.get("useUnfairLock") != null) {
+				if (item.get("useUnfairLock") != null) {
+					dataSource.setUseUnfairLock(Boolean.parseBoolean(StringUtils.toString(item.get("useUnfairLock"))));
+				}
+			}
+
+			if (item.containsKey("maxOpenPreparedStatements") && item.get("maxOpenPreparedStatements") != null) {
+				dataSource.setPoolPreparedStatements(false);
+				int value = NumberUtils.parseInt(StringUtils.toString(item.get("maxOpenPreparedStatements")));
+				dataSource.setMaxOpenPreparedStatements(value);
+				if (value > 0) {
+					dataSource.setPoolPreparedStatements(true);
+				}
+			}
+
+			if (item.containsKey("validationQuery") && item.get("validationQuery") != null) {
+				dataSource.setValidationQuery(StringUtils.toString(item.get("validationQuery")));
+			}
+
+			if (item.containsKey("validationQueryTimeout") && item.get("validationQueryTimeout") != null) {
+				dataSource.setValidationQueryTimeout(NumberUtils.parseInt(item.get("validationQueryTimeout")));
+			}
+			else if("sqlserver".equals(dataSource.getDbType())) {
+				dataSource.setValidationQueryTimeout(10);
+			}
+
+			if (item.containsKey("minEvictableIdleTimeMillis") && item.get("minEvictableIdleTimeMillis") != null) {
+				dataSource.setMinEvictableIdleTimeMillis(Long.parseLong(StringUtils.toString(item.get("minEvictableIdleTimeMillis"))));
+			}
+
+			if (item.containsKey("filters") && item.get("filters") != null) {
+				if (StringUtils.isNotEmpty(StringUtils.toString(item.get("filters")))) {
+					try {
+						dataSource.setFilters(StringUtils.toString(item.get("filters")));
+					} catch (SQLException e) {
+						log.error(e.getMessage(), e);
 					}
 				}
+			}
 
-				if (item.containsKey("minIdle") && item.get("minIdle") != null) {
-					if (NumberUtils.parseInt(NumberUtils.parseInt(item.get("minIdle"))) != null) {
-						dataSource.setMinIdle(NumberUtils.parseInt(item.get("minIdle")));
-					}
-				}
+			dataSource.setDefault(Boolean.TRUE.equals(item.get("default")));
+			if(dataSource.isDefault()) {
+				default_id = obj.getKey();
+			}
 
-				if (item.containsKey("maxWait") && item.get("maxWait") != null) {
-					if (NumberUtils.parseInt(NumberUtils.parseInt(item.get("maxWait"))) != null) {
-						dataSource.setMaxWait(NumberUtils.parseInt(item.get("maxWait")));
-					}
-				}
+			dataSource.setId(obj.getKey());
 
-				if (item.containsKey("useUnfairLock") && item.get("useUnfairLock") != null) {
-					if (item.get("useUnfairLock") != null) {
-						dataSource.setUseUnfairLock(Boolean.parseBoolean(StringUtils.toString(item.get("useUnfairLock"))));
-					}
-				}
-
-				if (item.containsKey("maxOpenPreparedStatements") && item.get("maxOpenPreparedStatements") != null) {
-					dataSource.setPoolPreparedStatements(false);
-					int value = NumberUtils.parseInt(StringUtils.toString(item.get("maxOpenPreparedStatements")));
-					dataSource.setMaxOpenPreparedStatements(value);
-					if (value > 0) {
-						dataSource.setPoolPreparedStatements(true);
-					}
-				}
-
-				if (item.containsKey("validationQuery") && item.get("validationQuery") != null) {
-					dataSource.setValidationQuery(StringUtils.toString(item.get("validationQuery")));
-				}
-
-				if (item.containsKey("validationQueryTimeout") && item.get("validationQueryTimeout") != null) {
-					dataSource.setValidationQueryTimeout(NumberUtils.parseInt(item.get("validationQueryTimeout")));
-				}
-				else if("sqlserver".equals(dataSource.getDbType())) {
-					dataSource.setValidationQueryTimeout(10);
-				}
-
-				if (item.containsKey("minEvictableIdleTimeMillis") && item.get("minEvictableIdleTimeMillis") != null) {
-					dataSource.setMinEvictableIdleTimeMillis(Long.parseLong(StringUtils.toString(item.get("minEvictableIdleTimeMillis"))));
-				}
-
-				if (item.containsKey("filters") && item.get("filters") != null) {
-					if (StringUtils.isNotEmpty(StringUtils.toString(item.get("filters")))) {
-						try {
-							dataSource.setFilters(StringUtils.toString(item.get("filters")));
-						} catch (SQLException e) {
-							log.error(e.getMessage(), e);
-						}
-					}
-				}
-
-				dataSource.setDefault(Boolean.TRUE.equals(item.get("default")));
-				if(dataSource.isDefault()) {
-					default_id = obj.getKey();
-				}
-
-				dataSource.setId(obj.getKey());
-
-				dataSourceMap.put(obj.getKey(), dataSource);
+			dataSourceMap.put(obj.getKey(), dataSource);
 //				if(!dataSource.isSingle()) {
 //					setToThreadLocal(dataSourceMap);
 //				}
+		}
+
+		if(!dataSourceMap.entrySet().stream().anyMatch(a-> a.getValue().isDefault())) {
+			for(String key : dataSourceMap.keySet()) {
+				dataSourceMap.get(key).setDefault(true);
+				break;
 			}
-			hasLoadedYmlConfig = true;
 		}
 	}
 
