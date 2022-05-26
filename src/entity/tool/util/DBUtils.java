@@ -675,8 +675,10 @@ public class DBUtils
 
             catch ( Exception e )
             {
-                log.error( String.format( "error field=====> %s", rsmd.getColumnLabel( i + 1 ) ) );
-                log.error(e.getMessage());
+                if("true".equals(ApplicationConfig.getInstance().get("${entity.debug}", ""))) {
+                    log.error( String.format( "error field=====> %s", rsmd.getColumnLabel( i + 1 ) ) );
+                    log.error(e.getMessage());
+                }
             }
         }
 
