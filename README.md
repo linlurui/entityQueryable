@@ -23,10 +23,10 @@ EntityQueryable是Java开如平台下轻量级ORM, 支持多数据库映射操�
     "http://mybatis.org/dtd/mybatis-3-config.dtd">
 <configuration>
   <typeAliases>
-    <typeAlias alias="UserEntity" type="ccait.entity.UserEntity" />
+    <typeAlias alias="UserEntity" type="entity.UserEntity" />
   </typeAliases>
   <mappers>
-    <mapper resource="ccait/mybatis/map/user-mapper.xml" />
+    <mapper resource="mybatis/map/user-mapper.xml" />
   </mappers>
   <environments default="mysql">
     <environment id="mysql" classScope="public" >
@@ -70,7 +70,7 @@ EntityQueryable是Java开如平台下轻量级ORM, 支持多数据库映射操�
 ```
  ### **3.Inherit base class "entity.query.Queryable" in your entity. eg:** 
 ```java
-package ccait.entity;
+package cn.entity;
 
 import java.util.Date;
 
