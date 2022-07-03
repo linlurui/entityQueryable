@@ -1,8 +1,13 @@
 package main.java.entites;
 
+import entity.tool.util.ThreadUtils;
+
 import java.sql.SQLException;
 
 public class Insert {
+    private static int count;
+    private static int total = 1000000;
+
     public static void insertTesttt() throws SQLException {
         TestttEntity entity = new TestttEntity() {{
             setField1(")12345678(");
@@ -27,5 +32,27 @@ public class Insert {
             setField20(")12345678(");
         }};
         entity.insert();
+    }
+
+    public static void main(String[] args) {
+        System.out.println("begin test insert......");
+        for(int i = 0; i< total; i++) {
+            int finalI = i;
+            ThreadUtils.onec(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Insert.insertTesttt();
+                        count++;
+                        System.out.print(String.format("count=%s, index=%s\r", count, finalI));
+                        if(count == total) {
+                            System.out.println(String.format("finish test insert %s times!!!!!!", count));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
     }
 }

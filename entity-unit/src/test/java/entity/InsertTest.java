@@ -1,5 +1,6 @@
 package test.java.entity;
 
+import entity.tool.util.ThreadUtils;
 import lombok.extern.slf4j.Slf4j;
 import main.java.entites.Insert;
 
@@ -10,15 +11,14 @@ import java.sql.SQLException;
 
 import static org.junit.Assert.*;
 
-@Slf4j
 public class InsertTest {
+
+    private Integer count;
 
     @Test
     public void insertTesttt() throws SQLException {
-        log.info("begin test insert......");
-        for(int i=0; i<1000000; i++) {
-            Insert.insertTesttt();
-        }
-        log.info("finish test insert!!!!!!");
+        System.out.println("begin test insert......");
+        Insert.insertTesttt();
+        System.out.println("finish test insert!!!!!!");
     }
 }
