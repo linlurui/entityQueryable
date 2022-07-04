@@ -48,7 +48,7 @@ public final class Select<T> extends QueryableAction<T> {
 		getParser().cleanSelectList();
 	}
 
-	public void createView(String viewName) throws SQLException {
+	public void createView(String viewName) throws Exception {
 
 		if(StringUtils.isEmpty(viewName)) {
 			throw new SQLException("view name can not bet empty!!!");
@@ -60,7 +60,7 @@ public final class Select<T> extends QueryableAction<T> {
 		DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
 	}
 
-	public void alterView(String viewName) throws SQLException {
+	public void alterView(String viewName) throws Exception {
 
 		if(StringUtils.isEmpty(viewName)) {
 			throw new SQLException("view name can not bet empty!!!");

@@ -18,9 +18,11 @@ import entity.query.enums.AlterMode;
 import entity.tool.util.OutParameter;
 import entity.tool.util.StringUtils;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.sql.Blob;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -136,7 +138,13 @@ public class OracleParser extends SqlParserBase {
 			sb.append(String.format(",constraint PK_%s primary key (%s)", tablename, String.format("%s%s%s", getPrefix(), pk, getSuffix())));
 		}
 
-		List<String> uniqueList = columns.stream().filter(a -> a.isUnique()).map(b -> b.getColumnName()).collect(Collectors.toList());
+		List<String> uniqueList = new ArrayList<String>();
+		for (ColumnInfo a : columns) {
+			if(a.isUnique()) {
+				uniqueList.add(a.getColumnName());
+			}
+		}
+
 		if(uniqueList.size() > 0) {
 			sb.append(String.format(",constraint %s unique(%s)",
 					StringUtils.join("_", uniqueList),

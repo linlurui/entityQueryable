@@ -22,14 +22,12 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Proxy;
 import java.sql.Blob;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
 
 public abstract class SqlParserBase implements ISqlParser {
 
@@ -229,10 +227,17 @@ public abstract class SqlParserBase implements ISqlParser {
 	    	String fieldName = m.group(1);
 	    	Object value = ReflectionUtils.getFieldValue(clazz, obj, fieldName);
 			if(value==null && sql.replace("\n", "").toUpperCase().startsWith("INSERT INTO")) {
-				Optional<Field> optional = Arrays.stream(flds).filter(a -> a.getName().equals(fieldName) &&
-						String.class.equals(a.getType())).findFirst();
-				if(optional.isPresent()) {
-					if(optional.get().getAnnotation(PrimaryKey.class)!=null) {
+				boolean isPresent = false;
+				Field field = null;
+				for(Field a : flds) {
+					if(a.getName().equals(fieldName) &&
+							String.class.equals(a.getType())) {
+						isPresent = true;
+						field = a;
+					}
+				}
+				if(isPresent) {
+					if(field.getAnnotation(PrimaryKey.class)!=null) {
 						value = UUID.randomUUID().toString().replace("-", "");
 					}
 				}
@@ -285,7 +290,12 @@ public abstract class SqlParserBase implements ISqlParser {
 				if(StringUtils.isNotEmpty(table)) {
 					break;
 				}
-				List<Annotation> list = Arrays.stream(item.annotationType().getAnnotations()).collect(Collectors.toList());
+				List<Annotation> list = new ArrayList<Annotation>();
+				if(item.annotationType().getAnnotations() != null) {
+					for (Annotation a : item.annotationType().getAnnotations()) {
+						list.add(a);
+					}
+				}
 				for(int i=0; i<list.size(); i++) {
 					if (list.get(i) instanceof Tablename) {
 						String value = ReflectionUtils.invoke(item.getClass(), item, "table").toString();

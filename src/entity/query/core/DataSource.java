@@ -220,26 +220,23 @@ public class DataSource extends DruidDataSource {
 	}
 
 	public static DatabaseType getHealthCheck(String dbtype) {
-		switch (dbtype.toUpperCase()) {
-			case "ORACLE":
-				return DatabaseType.ORACLE;
-			case "HSQLDB":
-				return DatabaseType.HSQLDB;
-			case "DB2":
-				return DatabaseType.DB2;
-			case "DERBY":
-				return DatabaseType.DERBY;
-			case "INFORMIX":
-				return DatabaseType.INFORMIX;
-			case "MARIADB":
-			case "MYSQL":
-				return DatabaseType.MYSQL;
-			case "SQLSERVER":
-				return DatabaseType.SQL_SERVER;
-			case "SQLITE":
-				return DatabaseType.SQLITE;
-			default:
-				return DatabaseType.OTHER;
+		if ("ORACLE".equals(dbtype.toUpperCase())) {
+			return DatabaseType.ORACLE;
+		} else if ("HSQLDB".equals(dbtype.toUpperCase())) {
+			return DatabaseType.HSQLDB;
+		} else if ("DB2".equals(dbtype.toUpperCase())) {
+			return DatabaseType.DB2;
+		} else if ("DERBY".equals(dbtype.toUpperCase())) {
+			return DatabaseType.DERBY;
+		} else if ("INFORMIX".equals(dbtype.toUpperCase())) {
+			return DatabaseType.INFORMIX;
+		} else if ("MARIADB".equals(dbtype.toUpperCase()) || "MYSQL".equals(dbtype.toUpperCase())) {
+			return DatabaseType.MYSQL;
+		} else if ("SQLSERVER".equals(dbtype.toUpperCase())) {
+			return DatabaseType.SQL_SERVER;
+		} else if ("SQLITE".equals(dbtype.toUpperCase())) {
+			return DatabaseType.SQLITE;
 		}
+		return DatabaseType.OTHER;
 	}
 }

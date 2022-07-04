@@ -119,16 +119,16 @@ public final class Where<T> extends QueryableAction<T> {
 
 	public <T1> boolean insertTo(Class<T1> clazz) throws SQLException {
 		final Integer[] row = {0};
-		Where queryable = this;
-		Class<T> genericType = this.genericType;
-		Object obj = this.entityObject();
+		final Where queryable = this;
+		final Class<T> genericType = this.genericType;
+		final Object obj = this.entityObject();
 		ThreadUtils.onec(new Runnable() {
 			@Override
 			public void run() {
 				try {
 					String sql = getParser().toString(genericType, "", CommandMode.InsertFrom, obj, 0, 0, false, null);
 					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
 			}
@@ -139,9 +139,9 @@ public final class Where<T> extends QueryableAction<T> {
 
 	public boolean delete() throws SQLException {
 		final Integer[] row = {0};
-		Where queryable = this;
-		Class<T> clazz = this.genericType;
-		Object obj = this.entityObject();
+		final Where queryable = this;
+		final Class<T> clazz = this.genericType;
+		final Object obj = this.entityObject();
 
 		ThreadUtils.onec(new Runnable() {
 			@Override
@@ -150,7 +150,7 @@ public final class Where<T> extends QueryableAction<T> {
 					String sql = getParser().toString(clazz, "", CommandMode.Delete, obj, 0, 0, false, null);
 					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
 					sql = null;
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
 			}
@@ -169,9 +169,9 @@ public final class Where<T> extends QueryableAction<T> {
     	}
 
 		final Integer[] row = {0};
-		Where queryable = this;
-		Class<T> clazz = this.genericType;
-		Object obj = this.entityObject();
+		final Where queryable = this;
+		final Class<T> clazz = this.genericType;
+		final Object obj = this.entityObject();
 
 		final String finalExpText = expText;
 		ThreadUtils.onec(new Runnable() {
@@ -182,7 +182,7 @@ public final class Where<T> extends QueryableAction<T> {
 				try {
 					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
 					sql = null;
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
 			}
@@ -205,9 +205,9 @@ public final class Where<T> extends QueryableAction<T> {
 		}
 
 		final Integer[] row = {0};
-		Where queryable = this;
-		Class<T> clazz = this.genericType;
-		Object obj = this.entityObject();
+		final Where queryable = this;
+		final Class<T> clazz = this.genericType;
+		final Object obj = this.entityObject();
 
 		final String finalExpText = expText;
 		ThreadUtils.onec(new Runnable() {
@@ -218,7 +218,7 @@ public final class Where<T> extends QueryableAction<T> {
 					String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
 					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
 					sql = null;
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
 			}

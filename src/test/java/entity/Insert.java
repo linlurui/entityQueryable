@@ -1,8 +1,8 @@
-package entites;
+package test.java.entity;
 
 import entity.query.ColumnInfo;
 import entity.query.Datetime;
-import entity.tool.util.ThreadUtils;
+import test.java.entity.TestEntity;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -14,9 +14,9 @@ public class Insert {
     private static int total = 1000000;
 
     public static void createTest() throws Exception {
-        List<ColumnInfo> columns = new ArrayList<>();
+        List<ColumnInfo> columns = new ArrayList<ColumnInfo>();
         for(int i=0; i<20; i++) {
-            int finalI = i;
+            final int finalI = i;
             columns.add(new ColumnInfo(){{
                 setType(String.class);
                 setColumnName(String.format("field%s", finalI +1));

@@ -26,7 +26,7 @@ public class ApplicationConfig  {
 
     private static final Logger log = LoggerFactory.getLogger(ApplicationConfig.class);
 
-    private final static Map<String, String> configMap = new HashMap<>();
+    private final static Map<String, String> configMap = new HashMap<String, String>();
 
     private static Map<String, Object> map;
 

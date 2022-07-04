@@ -67,7 +67,7 @@ public final class On<T> extends QueryableAction<T> {
 		return clause;
 	}
 
-	public <T1> boolean insertTo(Class<T1> clazz) throws SQLException {
+	public <T1> boolean insertTo(Class<T1> clazz) throws Exception {
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
 		String sql = getParser().toString(this.genericType, "", CommandMode.InsertFrom, this.entityObject(), 0, 0, false, blobMap);
 		Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);

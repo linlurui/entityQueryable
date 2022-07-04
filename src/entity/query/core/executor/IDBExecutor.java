@@ -27,9 +27,9 @@ public interface IDBExecutor {
 
     Connection getConnection() throws SQLException;
 
-    Integer execute(String sql ) throws SQLException;
+    Integer execute(String sql ) throws Exception;
 
-    Integer execute( String sql, Map<Integer, Blob> blobMap ) throws SQLException;
+    Integer execute( String sql, Map<Integer, Blob> blobMap ) throws Exception;
 
     <E> List<E> query(Class<E> returnType, String sql) throws SQLException ;
 

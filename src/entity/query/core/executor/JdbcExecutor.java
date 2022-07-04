@@ -56,13 +56,13 @@ public class JdbcExecutor implements IDBExecutor {
     }
 
     @Override
-    public Integer execute(String sql ) throws SQLException
+    public Integer execute(String sql ) throws Exception
     {
         return execute(sql, null);
     }
 
     @Override
-    public Integer execute( String sql, Map<Integer, Blob> blobMap ) throws SQLException
+    public Integer execute( String sql, Map<Integer, Blob> blobMap ) throws Exception
     {
         return DBUtils.execute(Integer.class, sql, blobMap, getConnection(), getDatasource());
     }
@@ -138,26 +138,22 @@ public class JdbcExecutor implements IDBExecutor {
                 blobMap = blobList.get(i);
             }
             String sql = sqls.get(i).toLowerCase();
-            switch (dataActuator.dataSource().getDbType()) {
-                case "ORACLE":
-                    Matcher m = Pattern.compile("insert\\s+into\\s*((\\w[\\w\\d]*)\\s*\\([,\"\\w]*(id)\\s*[,\\)])").matcher(sql);
-                    if(m.find()){
-                        sql = m.replaceAll("INSERT IGNORE_ROW_ON_DUPKEY_INDEX($2($3)) INTO $1");
-                    }
-                    break;
-                case "MARIADB":
-                case "MYSQL":
-                    sql = sql.replaceAll("insert\\s+into", "insert\\s+ignore\\s+into");
-                    break;
-                case "SQLITE":
-                    sql = sql.replaceAll("insert\\s+or\\s+into", "insert\\s+ignore\\s+into");
-                    break;
+            if("ORACLE".equals(dataActuator.dataSource().getDbType())) {
+                Matcher m = Pattern.compile("insert\\s+into\\s*((\\w[\\w\\d]*)\\s*\\([,\"\\w]*(id)\\s*[,\\)])").matcher(sql);
+                if(m.find()){
+                    sql = m.replaceAll("INSERT IGNORE_ROW_ON_DUPKEY_INDEX($2($3)) INTO $1");
+                }
             }
-
+            else if("MARIADB".equals(dataActuator.dataSource().getDbType()) || "MYSQL".equals(dataActuator.dataSource().getDbType())) {
+                sql = sql.replaceAll("insert\\s+into", "insert\\s+ignore\\s+into");
+            }
+            else if("SQLITE".equals(dataActuator.dataSource().getDbType()) || "MYSQL".equals(dataActuator.dataSource().getDbType())) {
+                sql = sql.replaceAll("insert\\s+or\\s+into", "insert\\s+ignore\\s+into");
+            }
             try {
                 results.add((E)execute(sql, blobMap));
             }
-            catch (SQLException e) {
+            catch (Exception e) {
                 log.error(e.getMessage(), e);
             }
         }
@@ -166,7 +162,7 @@ public class JdbcExecutor implements IDBExecutor {
     }
 
     @Override
-    public <E> Single<E> single(Class<E> returnType, String sql) {
+    public <E> Single<E> single(final Class<E> returnType, final String sql) {
         return Single.fromCallable(new Callable<E>() {
             @Override
             public E call() throws Exception {
@@ -176,7 +172,7 @@ public class JdbcExecutor implements IDBExecutor {
     }
 
     @Override
-    public <E> Maybe<E> maybe(Class<E> returnType, String sql) {
+    public <E> Maybe<E> maybe(final Class<E> returnType, final String sql) {
         return Maybe.fromCallable(new Callable<E>() {
             @Override
             public E call() throws Exception {
@@ -186,7 +182,7 @@ public class JdbcExecutor implements IDBExecutor {
     }
 
     @Override
-    public <E> Flowable<E> flowable(Class<E> returnType, String sql) {
+    public <E> Flowable<E> flowable(final Class<E> returnType, final String sql) {
         return Flowable
                 .create(new FlowableOnSubscribe<E>() {
                     @Override
@@ -205,7 +201,7 @@ public class JdbcExecutor implements IDBExecutor {
     }
 
     @Override
-    public Flowable<Integer> flowable(String sql, Map<Integer, Blob> blobMap) {
+    public Flowable<Integer> flowable(final String sql, Map<Integer, Blob> blobMap) {
         return Flowable.fromCallable(new Callable<Integer>() {
             @Override
             public Integer call() throws Exception {

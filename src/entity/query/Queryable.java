@@ -94,9 +94,9 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 	public Integer insert() throws SQLException {
 		final Integer[] id = {0};
-		Queryable queryable = this;
-		Class<T> clazz = this.genericType;
-		Object obj = this.entityObject();
+		final Queryable queryable = this;
+		final Class<T> clazz = this.genericType;
+		final Object obj = this.entityObject();
 		ThreadUtils.onec(new Runnable() {
 			@Override
 			public void run() {
@@ -104,7 +104,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
 					String sql = getParser().toString(clazz, "", CommandMode.Insert, obj, 0, 0, false, blobMap);
 					id[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, blobMap);
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
 			}});
@@ -113,16 +113,16 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 	public boolean delete() throws SQLException {
 		final Integer[] row = {0};
-		Queryable queryable = this;
-		Class<T> clazz = this.genericType;
-		Object obj = this.entityObject();
+		final Queryable queryable = this;
+		final Class<T> clazz = this.genericType;
+		final Object obj = this.entityObject();
 		ThreadUtils.onec(new Runnable(){
 			@Override
 			public void run() {
 				try {
 					String sql = getParser().toString(clazz, "", CommandMode.Delete, obj, 0, 0, false, null);
 					row[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, null);
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
 			}
@@ -133,9 +133,9 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 	public boolean update() throws SQLException {
 		final Integer[] row = {0};
-		Queryable queryable = this;
-		Class<T> clazz = this.genericType;
-		Object obj = this.entityObject();
+		final Queryable queryable = this;
+		final Class<T> clazz = this.genericType;
+		final Object obj = this.entityObject();
 
 		ThreadUtils.onec(new Runnable(){
 			@Override
@@ -144,7 +144,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
 					String sql = getParser().toString(clazz, "", CommandMode.Update, obj, 0, 0, false, blobMap);
 					row[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, blobMap);
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
 			}
@@ -183,7 +183,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 			fieldname = fieldNameAnn.value();
 		}
 
-		QueryableAction ac = this.where(String.format("%s=#{%s}", fieldname, primaryKey.getName()));
+		final QueryableAction ac = this.where(String.format("%s=#{%s}", fieldname, primaryKey.getName()));
 
 		String expText = "";
 		for (int i=0; i<exp.length; i++) {
@@ -194,9 +194,9 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 		}
 
 		final Integer[] row = {0};
-		Queryable queryable = this;
-		Class<T> clazz = this.genericType;
-		Object obj = this.entityObject();
+		final Queryable queryable = this;
+		final Class<T> clazz = this.genericType;
+		final Object obj = this.entityObject();
 
 		final String finalExpText = expText;
 		ThreadUtils.onec(new Runnable(){
@@ -207,7 +207,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 					String sql = ac.getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
 					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
 					sql = null;
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
 			}

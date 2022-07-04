@@ -285,10 +285,10 @@ public abstract class QueryableAction<T> implements IDataActuator
         return flowable;
     }
 
-    public Single<Boolean> asyncExist() throws Exception {
+    public Single<T> asyncExist() throws Exception {
         String sql = getParser().toString( this.genericType, "", CommandMode.Select, this.entityObject, 0, 1, false, null );
-        Single<Boolean> single = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(getGenericType(), sql).any(a-> a!=null);
-        return single;
+        Flowable<T> result = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(getGenericType(), sql);
+        return result.singleOrError();
     }
 
     public Single<Boolean> isEmpty() throws Exception {

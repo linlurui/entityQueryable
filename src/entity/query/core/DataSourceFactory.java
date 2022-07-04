@@ -29,7 +29,6 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public final class DataSourceFactory {
 
@@ -103,7 +102,12 @@ public final class DataSourceFactory {
 				if(ann!=null) {
 					break;
 				}
-				List<Annotation> list = Arrays.stream(item.annotationType().getAnnotations()).collect(Collectors.toList());
+				List<Annotation> list = new ArrayList<Annotation>();
+				if(item.annotationType().getAnnotations() != null) {
+					for (Annotation a : item.annotationType().getAnnotations()) {
+						list.add(a);
+					}
+				}
 				for(int i=0; i<list.size(); i++) {
 					if(StringUtils.isNotEmpty(ds)) {
 						break;
@@ -317,9 +321,16 @@ public final class DataSourceFactory {
 //				}
 		}
 
-		if(!dataSourceMap.entrySet().stream().anyMatch(a-> a.getValue().isDefault())) {
-			for(String key : dataSourceMap.keySet()) {
-				dataSourceMap.get(key).setDefault(true);
+		boolean hasDefault = false;
+		for(Map.Entry<String, DataSource> entry : dataSourceMap.entrySet()) {
+			if(entry.getValue().isDefault()) {
+				hasDefault = true;
+				break;
+			}
+		}
+		if(!hasDefault) {
+			for(Map.Entry<String, DataSource> entry : dataSourceMap.entrySet()) {
+				entry.getValue().setDefault(true);
 				break;
 			}
 		}
@@ -625,20 +636,18 @@ public final class DataSourceFactory {
 		if(StringUtils.isEmpty(dbtype)) {
 			return "select 1";
 		}
-		switch (dbtype.toUpperCase()) {
-			case "ORACLE":
-				return "select 1 from dual";
-			case "HSQLDB":
-				return "SELECT 1 FROM INFORMATION_SCHEMA.SYSTEM_USERS";
-			case "DB2":
-				return "select 1 from sysibm.sysdummy1";
-			case "DERBY":
-				return "SELECT 1 FROM SYSIBM.SYSDUMMY1";
-			case "INFORMIX":
-				return "select count(*) from systables";
-			default:
-				return "select 1";
+		if ("ORACLE".equals(dbtype.toUpperCase())) {
+			return "select 1 from dual";
+		} else if ("HSQLDB".equals(dbtype.toUpperCase())) {
+			return "SELECT 1 FROM INFORMATION_SCHEMA.SYSTEM_USERS";
+		} else if ("DB2".equals(dbtype.toUpperCase())) {
+			return "select 1 from sysibm.sysdummy1";
+		} else if ("DERBY".equals(dbtype.toUpperCase())) {
+			return "SELECT 1 FROM SYSIBM.SYSDUMMY1";
+		} else if ("INFORMIX".equals(dbtype.toUpperCase())) {
+			return "select count(*) from systables";
 		}
+		return "select 1";
 	}
 
 	private String getSchema(String url) {

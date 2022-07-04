@@ -152,22 +152,18 @@ public class RxJava2JdbcExecutor implements IDBExecutor {
                 blobMap = blobList.get(i);
             }
             String sql = sqls.get(i).toLowerCase();
-            switch (dataActuator.dataSource().getDbType()) {
-                case "ORACLE":
-                    Matcher m = Pattern.compile("insert\\s+into\\s*((\\w[\\w\\d]*)\\s*\\([,\"\\w]*(id)\\s*[,\\)])").matcher(sql);
-                    if(m.find()){
-                        sql = m.replaceAll("INSERT IGNORE_ROW_ON_DUPKEY_INDEX($2($3)) INTO $1");
-                    }
-                    break;
-                case "MARIADB":
-                case "MYSQL":
-                    sql = sql.replaceAll("insert\\s+into", "insert\\s+ignore\\s+into");
-                    break;
-                case "SQLITE":
-                    sql = sql.replaceAll("insert\\s+or\\s+into", "insert\\s+ignore\\s+into");
-                    break;
+            if("ORACLE".equals(dataActuator.dataSource().getDbType())) {
+                Matcher m = Pattern.compile("insert\\s+into\\s*((\\w[\\w\\d]*)\\s*\\([,\"\\w]*(id)\\s*[,\\)])").matcher(sql);
+                if(m.find()){
+                    sql = m.replaceAll("INSERT IGNORE_ROW_ON_DUPKEY_INDEX($2($3)) INTO $1");
+                }
             }
-
+            else if("MARIADB".equals(dataActuator.dataSource().getDbType()) || "MYSQL".equals(dataActuator.dataSource().getDbType())) {
+                sql = sql.replaceAll("insert\\s+into", "insert\\s+ignore\\s+into");
+            }
+            else if("SQLITE".equals(dataActuator.dataSource().getDbType()) || "MYSQL".equals(dataActuator.dataSource().getDbType())) {
+                sql = sql.replaceAll("insert\\s+or\\s+into", "insert\\s+ignore\\s+into");
+            }
             try {
                 results.add((E)execute(sql, blobMap));
             }
@@ -192,7 +188,7 @@ public class RxJava2JdbcExecutor implements IDBExecutor {
     }
 
     @Override
-    public <E> Flowable<E> flowable(Class<E> returnType, String sql) {
+    public <E> Flowable<E> flowable(final Class<E> returnType, String sql) {
 
         if(StringUtils.isEmpty(sql)) {
             return Flowable.empty();

@@ -11,6 +11,7 @@
 package entity.tool.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Date;
@@ -156,9 +157,11 @@ public class ReflectionUtils {
 
         String method = getMethodName(fieldname, "get");
 
-        final String finalMethod = method;
-        if(!Arrays.stream(clazz.getDeclaredMethods()).filter(a->a.getName().equals(finalMethod)).findAny().isPresent()) {
-            method = "get"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+        for(Method a : clazz.getDeclaredMethods()) {
+            if(a.getName().equals(method)) {
+                method = "get"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+                break;
+            }
         }
 
         return invoke(clazz, obj, method);
@@ -169,10 +172,11 @@ public class ReflectionUtils {
         fieldname = ensureFieldname(clazz, fieldname);
 
         String method = getMethodName(fieldname, "set");
-
-        final String finalMethod = method;
-        if(!Arrays.stream(clazz.getDeclaredMethods()).filter(a->a.getName().equals(finalMethod)).findAny().isPresent()) {
-            method = "set"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+        for(Method a : clazz.getDeclaredMethods()) {
+            if(a.getName().equals(method)) {
+                method = "set"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+                break;
+            }
         }
 
         if(value != null) {
@@ -208,9 +212,11 @@ public class ReflectionUtils {
             if(!hasValue) {
                 try {
                     String getter = getMethodName(fieldname, "get");
-                    String finalGetter = getter;
-                    if(!Arrays.stream(clazz.getDeclaredMethods()).filter(a->a.getName().equals(finalGetter)).findAny().isPresent()) {
-                        getter = "get"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+                    for(Method a : clazz.getDeclaredMethods()) {
+                        if(a.getName().equals(getter)) {
+                            getter = "get"+ fieldname.substring(0, 1).toUpperCase()+ fieldname.substring(1);
+                            break;
+                        }
                     }
 
                     if (clazz.getMethod(getter) != null) {

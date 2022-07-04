@@ -41,11 +41,11 @@ public class DataActuatorFactory {
 
         @JsonIgnore
         @JSONField(serialize = false)
-        private ThreadLocal<Connection> connection = new ThreadLocal<>();
+        private ThreadLocal<Connection> connection = new ThreadLocal<Connection>();
 
         @JsonIgnore
         @JSONField(serialize = false)
-        private ThreadLocal<DataSource> dataSource = new ThreadLocal<>();
+        private ThreadLocal<DataSource> dataSource = new ThreadLocal<DataSource>();
 
         @Override
         public Connection getConnection() {

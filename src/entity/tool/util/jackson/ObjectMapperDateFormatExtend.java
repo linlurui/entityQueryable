@@ -12,7 +12,7 @@ public class ObjectMapperDateFormatExtend extends DateFormat {
 
     private static final long serialVersionUID = 1L;
     private DateFormat dateFormat;
-    private static final List<String> formarts = new ArrayList<>(4);
+    private static final List<String> formarts = new ArrayList<String>(4);
 
     static {
         formarts.add("yyyy-MM");

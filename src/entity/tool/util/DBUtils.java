@@ -120,7 +120,11 @@ public class DBUtils
                 else {
                     return String.format( "'%s'", arg.getClass().getMethod("getValue").invoke(arg).toString() );
                 }
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            } catch (InvocationTargetException e) {
+                log.warn(e.getMessage());
+            } catch (IllegalAccessException e) {
+                log.warn(e.getMessage());
+            } catch (NoSuchMethodException e) {
                 log.warn(e.getMessage());
             }
         }
@@ -465,22 +469,22 @@ public class DBUtils
         return list;
     }
 
-    public static <T> Integer execute( Class<T> clazz, String sql) throws SQLException
+    public static <T> Integer execute( Class<T> clazz, String sql) throws Exception
     {
         return execute(clazz, sql, null, null, null);
     }
 
-    public static <T> Integer execute( Class<T> clazz, String sql, Connection conn) throws SQLException
+    public static <T> Integer execute( Class<T> clazz, String sql, Connection conn) throws Exception
     {
         return execute(clazz, sql, null, conn, null);
     }
 
-    public static <T> Integer execute( Class<T> clazz, String sql, Map<Integer, Blob> blobMap ) throws SQLException
+    public static <T> Integer execute( Class<T> clazz, String sql, Map<Integer, Blob> blobMap ) throws Exception
     {
         return execute(clazz, sql, blobMap, null, null);
     }
 
-    public static <T> Integer execute( Class<T> clazz, String sql, Map<Integer, Blob> blobMap, Connection conn, DataSource datasource) throws SQLException
+    public static <T> Integer execute( Class<T> clazz, String sql, Map<Integer, Blob> blobMap, Connection conn, DataSource datasource) throws Exception
     {
         PreparedStatement preparedstatement = null;
         int rs = 0;
