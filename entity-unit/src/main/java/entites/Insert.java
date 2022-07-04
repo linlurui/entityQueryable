@@ -56,21 +56,16 @@ public class Insert {
         System.out.println(String.format("time=%s\r", Datetime.format(new Date(), "HH:mm:ss.SSS")));
         for(int i = 0; i< total; i++) {
             int finalI = i;
-            ThreadUtils.async(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Insert.insertTest();
-                        count++;
-                        System.out.print(String.format("count=%s, index=%s, time=%s\r", count, finalI, Datetime.format(new Date(), "HH:mm:ss.SSS")));
-                        if(count == total) {
-                            System.out.println(String.format("finish test insert %s times %s!!!!!!", count, Datetime.format(new Date(), "HH:mm:ss.SSS")));
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+            try {
+                Insert.insertTest();
+                count++;
+                System.out.print(String.format("count=%s, index=%s, time=%s\r", count, finalI, Datetime.format(new Date(), "HH:mm:ss.SSS")));
+                if(count == total) {
+                    System.out.println(String.format("finish test insert %s times %s!!!!!!", count, Datetime.format(new Date(), "HH:mm:ss.SSS")));
                 }
-            });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }

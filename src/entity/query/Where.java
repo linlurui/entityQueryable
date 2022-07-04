@@ -21,8 +21,11 @@ import entity.query.enums.JoinMode;
 import entity.tool.util.Callback;
 import entity.tool.util.DBUtils;
 import entity.tool.util.StringUtils;
+import entity.tool.util.ThreadUtils;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Blob;
 import java.sql.SQLException;
@@ -32,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class Where<T> extends QueryableAction<T> {
+	private static final Logger log = LoggerFactory.getLogger(Where.class);
 
 	protected Where() {
 		super();
@@ -114,18 +118,45 @@ public final class Where<T> extends QueryableAction<T> {
 	}
 
 	public <T1> boolean insertTo(Class<T1> clazz) throws SQLException {
+		final Integer[] row = {0};
+		Where queryable = this;
+		Class<T> genericType = this.genericType;
+		Object obj = this.entityObject();
+		ThreadUtils.onec(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					String sql = getParser().toString(genericType, "", CommandMode.InsertFrom, obj, 0, 0, false, null);
+					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
+				} catch (SQLException e) {
+					log.error(e.getMessage(), e);
+				}
+			}
+		});
 
-		String sql = getParser().toString(this.genericType, "", CommandMode.InsertFrom, this.entityObject(), 0, 0, false, null);
-		Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, null);
-
-		return row!=null && row > 0;
+		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public boolean delete() throws SQLException {
-		String sql = getParser().toString(this.genericType, "", CommandMode.Delete, this.entityObject(), 0, 0, false, null);
-		Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, null);
+		final Integer[] row = {0};
+		Where queryable = this;
+		Class<T> clazz = this.genericType;
+		Object obj = this.entityObject();
 
-		return row!=null && row > 0;
+		ThreadUtils.onec(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					String sql = getParser().toString(clazz, "", CommandMode.Delete, obj, 0, 0, false, null);
+					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
+					sql = null;
+				} catch (SQLException e) {
+					log.error(e.getMessage(), e);
+				}
+			}
+		});
+
+		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public boolean update(String... exp) throws SQLException {
@@ -136,11 +167,29 @@ public final class Where<T> extends QueryableAction<T> {
     		}
     		expText = expText + DBUtils.getSqlInjText( exp[i] );
     	}
-		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
-		Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
 
-		return row!=null && row > 0;
+		final Integer[] row = {0};
+		Where queryable = this;
+		Class<T> clazz = this.genericType;
+		Object obj = this.entityObject();
+
+		final String finalExpText = expText;
+		ThreadUtils.onec(new Runnable() {
+			@Override
+			public void run() {
+				Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+				String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
+				try {
+					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
+					sql = null;
+				} catch (SQLException e) {
+					log.error(e.getMessage(), e);
+				}
+			}
+		});
+		expText = null;
+
+		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public boolean update(Map<String, Object> map) throws SQLException {
@@ -154,11 +203,29 @@ public final class Where<T> extends QueryableAction<T> {
 			expText = expText + String.format("[%s]=%s", DBUtils.getSqlInjText( item.getKey() ), DBUtils.getStringValue( item.getValue() ));
 			i++;
 		}
-		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
-		Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
 
-		return row!=null && row > 0;
+		final Integer[] row = {0};
+		Where queryable = this;
+		Class<T> clazz = this.genericType;
+		Object obj = this.entityObject();
+
+		final String finalExpText = expText;
+		ThreadUtils.onec(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+					String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
+					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
+					sql = null;
+				} catch (SQLException e) {
+					log.error(e.getMessage(), e);
+				}
+			}
+		});
+		expText = null;
+
+		return row[0] !=null && row[0].intValue()>0;
 	}
 
     public void batchInsert(List<T> list) throws Exception {

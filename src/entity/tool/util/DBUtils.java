@@ -21,8 +21,6 @@ import org.davidmoten.rx.jdbc.exceptions.SQLRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
-import javax.xml.crypto.Data;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -334,7 +332,7 @@ public class DBUtils
                 conn = datasource.getConnection();
             }
 
-            preparedstatement = conn.prepareStatement(sql);
+            preparedstatement = getPrepareStatement(datasource, conn, sql);
             rs = preparedstatement.executeQuery();
 
             ResultSetMetaData rsmd = rs.getMetaData();
@@ -430,7 +428,7 @@ public class DBUtils
                 conn = datasource.getConnection();
             }
 
-            preparedstatement = conn.prepareStatement( sql );
+            preparedstatement = getPrepareStatement(datasource, conn, sql);
 
             rs = preparedstatement.executeQuery();
 
@@ -486,7 +484,6 @@ public class DBUtils
     {
         PreparedStatement preparedstatement = null;
         int rs = 0;
-
         boolean autoCommit = true;
 
         try {
@@ -510,11 +507,11 @@ public class DBUtils
 
             if(conn.getMetaData().getDatabaseProductName().toLowerCase().equals("oracle")) {
                 String[] keysName = {"id"};
-                preparedstatement = conn.prepareStatement(sql, keysName);
+                preparedstatement = getPrepareStatement(datasource, conn, sql, keysName, true);
             }
 
             else {
-                preparedstatement = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+                preparedstatement = getPrepareStatement(datasource, conn, sql, null, true);
             }
 
             if(blobMap != null) {
@@ -591,12 +588,19 @@ public class DBUtils
                     return execute( clazz, sql, blobMap, conn, datasource);
                 }
 
+                if("No operations allowed after statement closed.".equals(e.getMessage())) {
+                    return execute( clazz, sql, blobMap, conn, datasource);
+                }
+
+                if("ResultSet is from UPDATE. No Data.".equals(e.getMessage())) {
+                    return execute( clazz, sql, blobMap, conn, datasource);
+                }
+
                 datasource.commit(conn);
             }
             else {
                 datasource.rollback(conn);
             }
-
             throw e;
         } finally
         {
@@ -620,6 +624,31 @@ public class DBUtils
      */
     public static boolean isJavaClass(Class<?> clz) {
         return clz != null && clz.getClassLoader() == null;
+    }
+
+    public static PreparedStatement getPrepareStatement(DataSource datasource, Connection conn, String sql) throws SQLException {
+        return getPrepareStatement(datasource, conn, sql, null, false);
+    }
+
+    public static PreparedStatement getPrepareStatement(DataSource datasource, Connection conn, String sql, String[] keys, boolean generatedKeys) throws SQLException {
+        try {
+            if(generatedKeys) {
+                if(keys != null && keys.length>0) {
+                    return conn.prepareStatement(sql, keys);
+                }
+                return conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            }
+            return conn.prepareStatement(sql);
+        } catch (SQLException throwables) {
+            if (conn.isClosed()) {
+                conn = datasource.getConnection();
+            }
+            else {
+                datasource.close(conn);
+                conn = datasource.getConnection();
+            }
+            return getPrepareStatement(datasource, conn, sql, keys, generatedKeys);
+        }
     }
 
     public static <E> E getMetaData(ResultSet rs, ResultSetMetaData rsmd, Class<E> returnType) throws SQLException {

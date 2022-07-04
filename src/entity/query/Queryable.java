@@ -22,6 +22,7 @@ import entity.query.enums.CommandMode;
 import entity.tool.util.Callback;
 import entity.tool.util.DBUtils;
 import entity.tool.util.JsonUtils;
+import entity.tool.util.ThreadUtils;
 import io.reactivex.Flowable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,27 +93,64 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 	}
 
 	public Integer insert() throws SQLException {
-
-		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(this.genericType, "", CommandMode.Insert, this.entityObject(), 0, 0, false, blobMap);
-		Integer id = DBExecutorAdapter.createExecutor(this).execute(sql, blobMap);
-
-		return id==null ? 0 : id;
+		final Integer[] id = {0};
+		Queryable queryable = this;
+		Class<T> clazz = this.genericType;
+		Object obj = this.entityObject();
+		ThreadUtils.onec(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+					String sql = getParser().toString(clazz, "", CommandMode.Insert, obj, 0, 0, false, blobMap);
+					id[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, blobMap);
+				} catch (SQLException e) {
+					log.error(e.getMessage(), e);
+				}
+			}});
+		return (id==null || id[0]==null) ? 0 : id[0];
 	}
 
 	public boolean delete() throws SQLException {
-		String sql = getParser().toString(this.genericType, "", CommandMode.Delete, this.entityObject(), 0, 0, false, null);
-		Integer row = DBExecutorAdapter.createExecutor(this).execute(sql, null);
+		final Integer[] row = {0};
+		Queryable queryable = this;
+		Class<T> clazz = this.genericType;
+		Object obj = this.entityObject();
+		ThreadUtils.onec(new Runnable(){
+			@Override
+			public void run() {
+				try {
+					String sql = getParser().toString(clazz, "", CommandMode.Delete, obj, 0, 0, false, null);
+					row[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, null);
+				} catch (SQLException e) {
+					log.error(e.getMessage(), e);
+				}
+			}
+		});
 
-		return row!=null && row.intValue()>0;
+		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public boolean update() throws SQLException {
-		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = getParser().toString(this.genericType, "", CommandMode.Update, this.entityObject(), 0, 0, false, blobMap);
-		Integer row = DBExecutorAdapter.createExecutor(this).execute(sql, blobMap);
+		final Integer[] row = {0};
+		Queryable queryable = this;
+		Class<T> clazz = this.genericType;
+		Object obj = this.entityObject();
 
-		return row!=null && row.intValue()>0;
+		ThreadUtils.onec(new Runnable(){
+			@Override
+			public void run() {
+				try {
+					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+					String sql = getParser().toString(clazz, "", CommandMode.Update, obj, 0, 0, false, blobMap);
+					row[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, blobMap);
+				} catch (SQLException e) {
+					log.error(e.getMessage(), e);
+				}
+			}
+		});
+
+		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public boolean update(String... exp) throws SQLException, IllegalAccessException {
@@ -155,11 +193,28 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 			expText = expText + DBUtils.getSqlInjText( exp[i] );
 		}
 
-		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-		String sql = ac.getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
-		Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
+		final Integer[] row = {0};
+		Queryable queryable = this;
+		Class<T> clazz = this.genericType;
+		Object obj = this.entityObject();
 
-		return row!=null && row > 0;
+		final String finalExpText = expText;
+		ThreadUtils.onec(new Runnable(){
+			@Override
+			public void run() {
+				try {
+					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+					String sql = ac.getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
+					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
+					sql = null;
+				} catch (SQLException e) {
+					log.error(e.getMessage(), e);
+				}
+			}
+		});
+		expText = null;
+
+		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public Flowable<Integer> asyncInsert() throws Exception {
