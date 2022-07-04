@@ -1,8 +1,8 @@
-package test.java.entity;
+package entity;
 
 import entity.tool.util.ThreadUtils;
 import lombok.extern.slf4j.Slf4j;
-import main.java.entites.Insert;
+import entites.Insert;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

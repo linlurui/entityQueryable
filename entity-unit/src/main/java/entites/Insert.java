@@ -1,4 +1,4 @@
-package main.java.entites;
+package entites;
 
 import entity.tool.util.ThreadUtils;
 
