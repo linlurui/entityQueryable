@@ -1,15 +1,30 @@
-package entites;
+package main.java.entites;
 
+import entity.query.ColumnInfo;
 import entity.tool.util.ThreadUtils;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Insert {
     private static int count;
     private static int total = 1000000;
 
-    public static void insertTesttt() throws SQLException {
-        TestttEntity entity = new TestttEntity() {{
+    public static void createTest() throws Exception {
+        List<ColumnInfo> columns = new ArrayList<>();
+        for(int i=0; i<20; i++) {
+            int finalI = i;
+            columns.add(new ColumnInfo(){{
+                setType(String.class);
+                setColumnName(String.format("field%s", finalI +1));
+            }});
+        }
+        TestEntity.createTable("test", "test", columns);
+    }
+
+    public static void insertTest() throws SQLException {
+        TestEntity entity = new TestEntity() {{
             setField1(")12345678(");
             setField2(")12345678(");
             setField3(")12345678(");
@@ -42,7 +57,7 @@ public class Insert {
                 @Override
                 public void run() {
                     try {
-                        Insert.insertTesttt();
+                        Insert.insertTest();
                         count++;
                         System.out.print(String.format("count=%s, index=%s\r", count, finalI));
                         if(count == total) {

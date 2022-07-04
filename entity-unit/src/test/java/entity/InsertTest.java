@@ -1,24 +1,26 @@
-package entity;
+package test.java.entity;
 
-import entity.tool.util.ThreadUtils;
-import lombok.extern.slf4j.Slf4j;
-import entites.Insert;
-
+import main.java.entites.Insert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.sql.SQLException;
-
-import static org.junit.Assert.*;
 
 public class InsertTest {
 
     private Integer count;
 
     @Test
-    public void insertTesttt() throws SQLException {
+    public void insertTest() throws SQLException {
         System.out.println("begin test insert......");
-        Insert.insertTesttt();
+        Insert.insertTest();
+        System.out.println("finish test insert!!!!!!");
+    }
+
+
+    @Test
+    public void createTest() throws Exception {
+        System.out.println("begin test insert......");
+        Insert.createTest();
         System.out.println("finish test insert!!!!!!");
     }
 }

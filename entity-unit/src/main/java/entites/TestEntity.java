@@ -1,13 +1,13 @@
-package entites;
+package main.java.entites;
 
 import entity.query.Queryable;
 import entity.query.annotation.*;
 import lombok.Data;
 
 @Data
-@Tablename(value = "testtt")
-@DataSource(value = "dev-visual")
-public class TestttEntity extends Queryable<TestttEntity> {
+@Tablename(value = "test")
+@DataSource(value = "test")
+public class TestEntity extends Queryable<TestEntity> {
     private String field1;
     private String field2;
     private String field3;

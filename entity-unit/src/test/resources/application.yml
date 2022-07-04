@@ -42,5 +42,7 @@ entity:
     environments:
       test:
         default: true
-        driver: org.sqlite.JDBC
-        url: jdbc:sqlite:ccait.db
+        driver: com.mysql.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/test?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;autoReconnect=true&amp;failOverReadOnly=false&amp;serverTimezone=CTT
+        username: root
+        password: 123456

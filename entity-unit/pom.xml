@@ -29,6 +29,13 @@
             <artifactId>lombok</artifactId>
             <version>1.16.22</version>
         </dependency>
+        <!--数据库驱动依赖-->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>8.0.16</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
     <build>
         <defaultGoal>compile</defaultGoal>
