@@ -1,10 +1,12 @@
 package entites;
 
 import entity.query.ColumnInfo;
+import entity.query.Datetime;
 import entity.tool.util.ThreadUtils;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Insert {
@@ -51,6 +53,7 @@ public class Insert {
 
     public static void main(String[] args) {
         System.out.println("begin test insert......");
+        System.out.println(String.format("time=%s\r", Datetime.format(new Date(), "HH:mm:ss.SSS")));
         for(int i = 0; i< total; i++) {
             int finalI = i;
             ThreadUtils.onec(new Runnable() {
@@ -59,7 +62,7 @@ public class Insert {
                     try {
                         Insert.insertTest();
                         count++;
-                        System.out.print(String.format("count=%s, index=%s\r", count, finalI));
+                        System.out.print(String.format("count=%s, index=%s, time=%s\r", count, finalI, Datetime.format(new Date(), "HH:mm:ss.SSS")));
                         if(count == total) {
                             System.out.println(String.format("finish test insert %s times!!!!!!", count));
                         }
