@@ -1,4 +1,4 @@
-package main.java.entites;
+package entites;
 
 import entity.query.ColumnInfo;
 import entity.tool.util.ThreadUtils;

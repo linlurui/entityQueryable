@@ -1,6 +1,6 @@
-package test.java.entity;
+package entity;
 
-import main.java.entites.Insert;
+import entites.Insert;
 import org.junit.Test;
 
 import java.sql.SQLException;

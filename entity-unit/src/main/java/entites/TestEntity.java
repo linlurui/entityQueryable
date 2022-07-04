@@ -1,4 +1,4 @@
-package main.java.entites;
+package entites;
 
 import entity.query.Queryable;
 import entity.query.annotation.*;
