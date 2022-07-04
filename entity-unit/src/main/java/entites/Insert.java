@@ -64,7 +64,7 @@ public class Insert {
                         count++;
                         System.out.print(String.format("count=%s, index=%s, time=%s\r", count, finalI, Datetime.format(new Date(), "HH:mm:ss.SSS")));
                         if(count == total) {
-                            System.out.println(String.format("finish test insert %s times!!!!!!", count));
+                            System.out.println(String.format("finish test insert %s times %s!!!!!!", count, Datetime.format(new Date(), "HH:mm:ss.SSS")));
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
