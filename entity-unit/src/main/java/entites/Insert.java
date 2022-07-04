@@ -56,7 +56,7 @@ public class Insert {
         System.out.println(String.format("time=%s\r", Datetime.format(new Date(), "HH:mm:ss.SSS")));
         for(int i = 0; i< total; i++) {
             int finalI = i;
-            ThreadUtils.onec(new Runnable() {
+            ThreadUtils.async(new Runnable() {
                 @Override
                 public void run() {
                     try {
