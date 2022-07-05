@@ -41,9 +41,30 @@ EntityQueryable是Java开如平台下轻量级ORM, 支持多数据库映射操�
   </environments>
 </configuration>  
 ```
+### **Or add config to /conf/application.yml**
+```yaml
+# entityQueryable config
+entity:
+  datasource:
+    activated: test #activated datasource
+    #configFile: db-config.xml #db-config path
+    environments:
+      test:
+        default: true
+        driver: com.mysql.jdbc.Driver
+        url: jdbc:mysql://localhost:3306/test?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;autoReconnect=true&amp;failOverReadOnly=false&amp;serverTimezone=CTT
+        username: root
+        password: 123456
+```
 
  ### 2.Add the jar package by maven
 ```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>entity-orm</groupId>
+    <artifactId>entity.queryable</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <repositories>
         <repository>
             <id>gitee</id>
@@ -62,11 +83,12 @@ EntityQueryable是Java开如平台下轻量级ORM, 支持多数据库映射操�
     
     <dependencies>
         <dependency>
-            <groupId>entity.queryable</groupId>
+            <groupId>entity-orm</groupId>
             <artifactId>entity.queryable</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
-    <dependencies>
+    </dependencies>
+</project>
 ```
  ### **3.Inherit base class "entity.query.Queryable" in your entity. eg:** 
 ```java
