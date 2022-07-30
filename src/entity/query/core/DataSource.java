@@ -220,21 +220,21 @@ public class DataSource extends DruidDataSource {
 	}
 
 	public static DatabaseType getHealthCheck(String dbtype) {
-		if ("ORACLE".equals(dbtype.toUpperCase())) {
+		if ("ORACLE".equalsIgnoreCase(dbtype)) {
 			return DatabaseType.ORACLE;
-		} else if ("HSQLDB".equals(dbtype.toUpperCase())) {
+		} else if ("HSQLDB".equalsIgnoreCase(dbtype)) {
 			return DatabaseType.HSQLDB;
-		} else if ("DB2".equals(dbtype.toUpperCase())) {
+		} else if ("DB2".equalsIgnoreCase(dbtype)) {
 			return DatabaseType.DB2;
-		} else if ("DERBY".equals(dbtype.toUpperCase())) {
+		} else if ("DERBY".equalsIgnoreCase(dbtype)) {
 			return DatabaseType.DERBY;
-		} else if ("INFORMIX".equals(dbtype.toUpperCase())) {
+		} else if ("INFORMIX".equalsIgnoreCase(dbtype)) {
 			return DatabaseType.INFORMIX;
-		} else if ("MARIADB".equals(dbtype.toUpperCase()) || "MYSQL".equals(dbtype.toUpperCase())) {
+		} else if ("MARIADB".equalsIgnoreCase(dbtype) || "MYSQL".equalsIgnoreCase(dbtype)) {
 			return DatabaseType.MYSQL;
-		} else if ("SQLSERVER".equals(dbtype.toUpperCase())) {
+		} else if ("SQLSERVER".equalsIgnoreCase(dbtype)) {
 			return DatabaseType.SQL_SERVER;
-		} else if ("SQLITE".equals(dbtype.toUpperCase())) {
+		} else if ("SQLITE".equalsIgnoreCase(dbtype)) {
 			return DatabaseType.SQLITE;
 		}
 		return DatabaseType.OTHER;

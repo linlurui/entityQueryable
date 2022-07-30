@@ -122,6 +122,15 @@ public final class Where<T> extends QueryableAction<T> {
 		final Where queryable = this;
 		final Class<T> genericType = this.genericType;
 		final Object obj = this.entityObject();
+		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
+			try {
+				String sql = getParser().toString(genericType, "", CommandMode.InsertFrom, obj, 0, 0, false, null);
+				row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
+			} catch (Exception e) {
+				log.error(e.getMessage(), e);
+			}
+			return row[0] !=null && row[0].intValue()>0;
+		}
 		ThreadUtils.onec(new Runnable() {
 			@Override
 			public void run() {
@@ -142,7 +151,16 @@ public final class Where<T> extends QueryableAction<T> {
 		final Where queryable = this;
 		final Class<T> clazz = this.genericType;
 		final Object obj = this.entityObject();
-
+		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
+			try {
+				String sql = getParser().toString(clazz, "", CommandMode.Delete, obj, 0, 0, false, null);
+				row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
+				sql = null;
+			} catch (Exception e) {
+				log.error(e.getMessage(), e);
+			}
+			return row[0] !=null && row[0].intValue()>0;
+		}
 		ThreadUtils.onec(new Runnable() {
 			@Override
 			public void run() {
@@ -172,14 +190,24 @@ public final class Where<T> extends QueryableAction<T> {
 		final Where queryable = this;
 		final Class<T> clazz = this.genericType;
 		final Object obj = this.entityObject();
-
 		final String finalExpText = expText;
+		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
+			try {
+				Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+				String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
+				row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
+				sql = null;
+			} catch (Exception e) {
+				log.error(e.getMessage(), e);
+			}
+			return row[0] !=null && row[0].intValue()>0;
+		}
 		ThreadUtils.onec(new Runnable() {
 			@Override
 			public void run() {
-				Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-				String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
 				try {
+					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+					String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
 					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
 					sql = null;
 				} catch (Exception e) {
@@ -208,8 +236,18 @@ public final class Where<T> extends QueryableAction<T> {
 		final Where queryable = this;
 		final Class<T> clazz = this.genericType;
 		final Object obj = this.entityObject();
-
 		final String finalExpText = expText;
+		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
+			try {
+				Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+				String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
+				row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
+				sql = null;
+			} catch (Exception e) {
+				log.error(e.getMessage(), e);
+			}
+			return row[0] !=null && row[0].intValue()>0;
+		}
 		ThreadUtils.onec(new Runnable() {
 			@Override
 			public void run() {

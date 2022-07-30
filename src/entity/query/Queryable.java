@@ -97,6 +97,16 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 		final Queryable queryable = this;
 		final Class<T> clazz = this.genericType;
 		final Object obj = this.entityObject();
+		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
+			try {
+				Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+				String sql = getParser().toString(clazz, "", CommandMode.Insert, obj, 0, 0, false, blobMap);
+				id[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, blobMap);
+			} catch (Exception e) {
+				log.error(e.getMessage(), e);
+			}
+			return (id==null || id[0]==null) ? 0 : id[0];
+		}
 		ThreadUtils.onec(new Runnable() {
 			@Override
 			public void run() {
@@ -107,7 +117,8 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 				} catch (Exception e) {
 					log.error(e.getMessage(), e);
 				}
-			}});
+			}
+		});
 		return (id==null || id[0]==null) ? 0 : id[0];
 	}
 
@@ -331,7 +342,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 			dataSource = DataSourceFactory.getInstance().getDataSource(dataSourceId);
 			String sql = SqlParserFactory.createParser(dataSource).toString(null, tablename, CommandMode.PrimaryKey, null, 0, 0, false, null);
 
-			if( "sqlite".equals(dataSource.getDbType()) ) {
+			if( "sqlite".equalsIgnoreCase(dataSource.getDbType()) ) {
 				List<Map> list = DBExecutorAdapter.createExecutor(dataSource).query(Map.class, sql);
 				for(Map map : list) {
 					if("1".equals(map.get("pk").toString())) {

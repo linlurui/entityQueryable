@@ -635,24 +635,13 @@ public class DBUtils
     }
 
     public static PreparedStatement getPrepareStatement(DataSource datasource, Connection conn, String sql, String[] keys, boolean generatedKeys) throws SQLException {
-        try {
-            if(generatedKeys) {
-                if(keys != null && keys.length>0) {
-                    return conn.prepareStatement(sql, keys);
-                }
-                return conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        if(generatedKeys) {
+            if(keys != null && keys.length>0) {
+                return conn.prepareStatement(sql, keys);
             }
-            return conn.prepareStatement(sql);
-        } catch (SQLException throwables) {
-            if (conn.isClosed()) {
-                conn = datasource.getConnection();
-            }
-            else {
-                datasource.close(conn);
-                conn = datasource.getConnection();
-            }
-            return getPrepareStatement(datasource, conn, sql, keys, generatedKeys);
+            return conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         }
+        return conn.prepareStatement(sql);
     }
 
     public static <E> E getMetaData(ResultSet rs, ResultSetMetaData rsmd, Class<E> returnType) throws SQLException {

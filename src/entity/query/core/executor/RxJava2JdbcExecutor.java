@@ -158,10 +158,10 @@ public class RxJava2JdbcExecutor implements IDBExecutor {
                     sql = m.replaceAll("INSERT IGNORE_ROW_ON_DUPKEY_INDEX($2($3)) INTO $1");
                 }
             }
-            else if("MARIADB".equals(dataActuator.dataSource().getDbType()) || "MYSQL".equals(dataActuator.dataSource().getDbType())) {
+            else if("MARIADB".equalsIgnoreCase(dataActuator.dataSource().getDbType()) || "MYSQL".equalsIgnoreCase(dataActuator.dataSource().getDbType())) {
                 sql = sql.replaceAll("insert\\s+into", "insert\\s+ignore\\s+into");
             }
-            else if("SQLITE".equals(dataActuator.dataSource().getDbType()) || "MYSQL".equals(dataActuator.dataSource().getDbType())) {
+            else if("SQLITE".equalsIgnoreCase(dataActuator.dataSource().getDbType()) || "MYSQL".equalsIgnoreCase(dataActuator.dataSource().getDbType())) {
                 sql = sql.replaceAll("insert\\s+or\\s+into", "insert\\s+ignore\\s+into");
             }
             try {
