@@ -19,10 +19,7 @@ import entity.query.annotation.PrimaryKey;
 import entity.query.core.*;
 import entity.query.core.executor.DBExecutorAdapter;
 import entity.query.enums.CommandMode;
-import entity.tool.util.Callback;
-import entity.tool.util.DBUtils;
-import entity.tool.util.JsonUtils;
-import entity.tool.util.ThreadUtils;
+import entity.tool.util.*;
 import io.reactivex.Flowable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -382,8 +379,18 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 		DataSource dataSource = DataSourceFactory.getInstance().getDataSource(dataSourceId);
 		String sql = SqlParserFactory.createParser(dataSource).getAlterTableSql(tablename, columns);
-		DBExecutorAdapter.createExecutor(dataSource).execute(sql);
-
+		DBTransaction tran = dataSource.beginTransaction();
+		List<String> sqlList = StringUtils.splitString2List(sql, ";");
+		try {
+			for (String stm : sqlList) {
+				DBExecutorAdapter.createExecutor(dataSource).execute(String.format("%s;", stm));
+			}
+			dataSource.commit(tran.getConnection());
+		}
+		catch (Exception e) {
+			dataSource.rollback();
+			log.error(e.getMessage(), e);
+		}
 	}
 
 	public static void dropTable(String dataSourceId, String tablename) throws Exception {

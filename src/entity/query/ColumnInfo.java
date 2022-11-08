@@ -11,6 +11,7 @@
 
 package entity.query;
 
+import entity.query.annotation.Exclude;
 import entity.query.annotation.Fieldname;
 import entity.query.enums.AlterMode;
 import java.io.Serializable;
@@ -86,6 +87,17 @@ public class ColumnInfo implements Serializable {
 
 		return isAutoIncrement;
 	}
+
+	public String getColumnNameOld() {
+		return columnNameOld;
+	}
+
+	public void setColumnNameOld(String columnNameOld) {
+		this.columnNameOld = columnNameOld;
+	}
+
+	@Exclude
+	private String columnNameOld;
 
 	public void setIsAutoIncrement(Boolean autoIncrement) {
 		isAutoIncrement = autoIncrement;

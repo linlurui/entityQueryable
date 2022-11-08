@@ -128,15 +128,31 @@ public class SqLiteParser extends MysqlParser {
         }
 
         StringBuffer sb = new StringBuffer();
+        List<String> newColumns = new ArrayList<>();
+        List<String> oldColumns = new ArrayList<>();
+        String tmpTable = String.format("%s_dg_tmp", tablename);
+        //sb.append("BEGIN TRANSACTION;");
+        sb.append(getCreateTableSql(tmpTable, columns));
         for(ColumnInfo col : columns) {
-            if(isEmpty(col.getColumnName()) || (col.getType() == null && StringUtils.isEmpty(col.getDataType()))) {
+            if(isEmpty(col.getColumnName()) || col.getAlterMode()==AlterMode.DROP ||
+                    (col.getType() == null && StringUtils.isEmpty(col.getDataType()))) {
                 continue;
             }
-
-            fillBuildColumnString(sb, col, true);
+            if(StringUtils.isNotEmpty(col.getColumnNameOld())) {
+                oldColumns.add(col.getColumnNameOld());
+            }
+            else {
+                oldColumns.add(col.getColumnName());
+            }
+            newColumns.add(col.getColumnName());
         }
+        sb.append("insert into ["+tmpTable+"] (["+ StringUtils.join("], [", newColumns) +"])" +
+                "select ["+ StringUtils.join("], [", oldColumns) +"] from [" + tablename + "];");
+        sb.append(String.format("drop table %s;", tablename));
+        sb.append(String.format("alter table %s rename to %s;", tmpTable, tablename));
+        //sb.append("COMMIT;");
 
-        return String.format("ALTER TABLE [%s] %s ", tablename, sb.substring(1));
+        return sb.toString();
     }
 
     @Override
