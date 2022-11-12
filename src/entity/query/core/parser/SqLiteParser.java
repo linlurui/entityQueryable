@@ -45,7 +45,7 @@ public class SqLiteParser extends MysqlParser {
     @Override
     public String getTablesSql()
     {
-        return "SELECT name as table_name FROM sqlite_master WHERE type='table' or  type='view' ORDER BY name;";
+        return "SELECT name as table_name, type FROM sqlite_master WHERE type='table' or  type='view' ORDER BY name;";
     }
 
     @Override

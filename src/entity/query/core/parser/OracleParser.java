@@ -35,37 +35,37 @@ public class OracleParser extends SqlParserBase {
 	public OracleParser(DataSource ds) {
 		super(ds);
 	}
-	
+
 	@Override
 	public String getPrefix() {
 		return "\"";
 	}
-	
+
 	@Override
 	public String getSuffix() {
 		return "\"";
 	}
-	
-	
+
+
 	@Override
 	public <T> String getDeleteSql(Class<T> genericType) {
-		
+
 		String where = container.Where.length() > 0 ? String.format("WHERE %s", container.Where.toString()) : "";
 		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
 		param.setData(genericType);
 		String tablename = getTablename(param);
 		genericType = param.getData();
-		
+
 		return String.format("\nDELETE %s %s\n", tablename, where);
 	}
-	
+
 	@Override
 	public <T> String getSelectExistSql(Class<T> clazz) {
 		String fromText = "";
 		if(container.From.length()>0) {
 			fromText = container.From.toString();
 		}
-		
+
 		else {
 			OutParameter<Class<T>> param = new OutParameter<Class<T>>();
 			param.setData(clazz);
@@ -73,9 +73,9 @@ public class OracleParser extends SqlParserBase {
 			clazz = param.getData();
 			fromText = tablename;
 		}
-		
+
 		String whereText = container.Where.length()>0 ? String.format("WHERE %s", container.Where.toString()) : "";
-		
+
 		return String.format("\nSELECT COUNT(1) FROM %s %s LIMIT 0,1 \n", fromText, whereText);
 	}
 
@@ -87,7 +87,7 @@ public class OracleParser extends SqlParserBase {
     @Override
     public String getTablesSql()
     {
-        return "select table_name from user_tables where TABLESPACE_NAME is not null";
+        return "select table_name, 'table' as type from user_tables where TABLESPACE_NAME is not null";
     }
 
     @Override

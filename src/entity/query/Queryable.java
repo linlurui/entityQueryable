@@ -295,9 +295,13 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 		batchTask(list, this.genericType, this, getParser(), CommandMode.Delete, null, call);
 	}
 
-    public static List<String> getTables(String dataSourceId) {
+	public static List<TableInfo> getTables(String dataSourceId) {
+		return getTables(dataSourceId, TableInfo.class);
+	}
 
-		List<String> result = new ArrayList<String>();
+    public static <S> List getTables(String dataSourceId, Class<S> clazz) {
+
+		List<S> result = new ArrayList<S>();
 		DataSource dataSource = null;
 
 		try {
@@ -305,7 +309,7 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 			String sql = SqlParserFactory.createParser(dataSource).toString(null, "", CommandMode.Tables, null, 0, 0, false, null);
 
-			result = DBExecutorAdapter.createExecutor(dataSource).query(String.class, sql);
+			result = DBExecutorAdapter.createExecutor(dataSource).query(clazz, sql);
 
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);

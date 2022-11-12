@@ -50,7 +50,7 @@ public class SqlserverParser extends SqlParserBase
 
     @Override
     public String getTablesSql() {
-        return "select name as table_name from sysobjects where xtype='u' OR xtype='v'";
+        return "select name as table_name, case when xtype='v' then 'view' else 'table' end as type from sysobjects where xtype='u' OR xtype='v'";
     }
 
     @Override

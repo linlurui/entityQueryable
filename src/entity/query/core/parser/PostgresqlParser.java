@@ -36,7 +36,7 @@ public class PostgresqlParser extends MysqlParser {
 	public String getPrefix() {
 		return "\"";
 	}
-	
+
 	@Override
 	public String getSuffix() {
 		return "\"";
@@ -45,7 +45,7 @@ public class PostgresqlParser extends MysqlParser {
 	@Override
 	public String getTablesSql()
 	{
-		return "select relname as table_name from pg_class c where relkind = 'r' and relname not like 'pg_%' and relname not like 'sql_%' order by relname";
+		return "select relname as table_name, 'table' as type from pg_class c where relkind = 'r' and relname not like 'pg_%' and relname not like 'sql_%' order by relname";
 	}
 
 	@Override

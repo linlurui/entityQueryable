@@ -43,7 +43,7 @@ public class DB2Parser extends SqlParserBase {
     @Override
     public String getTablesSql()
     {
-        return "select name as table_name from sysibm.systables where type = 'T'";
+        return "select name as table_name, 'table' as type from sysibm.systables where type = 'T'";
     }
 
     @Override

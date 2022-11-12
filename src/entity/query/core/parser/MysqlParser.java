@@ -163,8 +163,8 @@ public class MysqlParser extends SqlParserBase {
     public String getTablesSql()
     {
         return String.format( "%s UNION %s;",
-                String.format( "SELECT table_name FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='%s'", schema() ),
-                String.format( "SELECT table_name FROM INFORMATION_SCHEMA.views WHERE TABLE_SCHEMA = '%s';", schema() )
+                String.format( "SELECT table_name, 'table' as type FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='%s'", schema() ),
+                String.format( "SELECT table_name, 'view' as type FROM INFORMATION_SCHEMA.views WHERE TABLE_SCHEMA = '%s';", schema() )
         );
     }
 

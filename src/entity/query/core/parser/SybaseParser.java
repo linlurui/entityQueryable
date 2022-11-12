@@ -57,7 +57,7 @@ public class SybaseParser extends SqlParserBase
     @Override
     public String getTablesSql()
     {
-        return "select name as table_name from sysobjects where type=\"U\"";
+        return "select name as table_name, \"table\" as type from sysobjects where type=\"U\"";
     }
 
     @Override
