@@ -697,6 +697,23 @@ public class DBUtils
                     result = (E)UUID.fromString(columnValue.toString());
                 }
                 else if(returnType == Map.class) {
+                    try {
+                        if(columnValue instanceof String) {
+                            if(columnValue!=null) {
+                                Map map = null;
+                                String json = columnValue.toString().replace("\\\"", "\"").replace("\"{\"", "{\"").replace("\"}\"", "\"}").trim();
+                                if(StringUtils.isNotEmpty(json) && json.startsWith("{") && json.endsWith("}")) {
+                                    map = JsonUtils.parse(json, Map.class);
+                                    if(map!=null) {
+                                        columnValue = map;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch(Exception e) {
+                        log.error(e.getMessage());
+                    }
                     mapMetaData.put(columnName, columnValue);
                 }
                 else {
