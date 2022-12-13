@@ -268,6 +268,10 @@ public abstract class SqlParserBase implements ISqlParser {
 			strValue = String.format("'%s'", value.toString().replace("-", ""));
 		}
 
+		else if(strValue.trim().startsWith("{") && strValue.trim().endsWith("}")) {
+			strValue = String.format("'%s'", strValue);
+		}
+
 		else {
 			Matcher m2 = pattern.matcher(strValue);
 			if (m2.find()) {

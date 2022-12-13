@@ -216,7 +216,6 @@ public class DBUtils
         }
         return arg.toString()
                 .replaceAll( "'", "" )
-                .replaceAll( "\"", "“" )
                 //.replaceAll("%", "％")
                 .replaceAll("\\*", "×")
                 //.replaceAll(";", "；")
@@ -701,7 +700,7 @@ public class DBUtils
                         if(columnValue instanceof String) {
                             if(columnValue!=null) {
                                 Map map = null;
-                                String json = columnValue.toString().replace("\\\"", "\"").replace("\"{\"", "{\"").replace("\"}\"", "\"}").trim();
+                                String json = columnValue.toString().replace("\\\"", "\"").replace("\"{", "{").replace("}\"", "}").trim();
                                 if(StringUtils.isNotEmpty(json) && json.startsWith("{") && json.endsWith("}")) {
                                     map = JsonUtils.parse(json, Map.class);
                                     if(map!=null) {
@@ -712,7 +711,7 @@ public class DBUtils
                         }
                     }
                     catch(Exception e) {
-                        log.error(e.getMessage());
+                        log.error("getMetaData Error: " + e.getMessage());
                     }
                     mapMetaData.put(columnName, columnValue);
                 }
