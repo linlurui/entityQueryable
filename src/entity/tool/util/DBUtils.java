@@ -64,7 +64,7 @@ public class DBUtils
 
         if ( arg instanceof String ) {
             if(arg == null) {
-                return "";
+                return "null";
             }
 
             if(Pattern.matches("^\\{\"date\":\\d+,\"hours\":\\d+,\"seconds\":\\d+,\"month\":\\d+,\"timezoneOffset\":[\\-\\d+]+,\"year\":\\d+,\"minutes\":\\d+,\"time\":\\d+,\"day\":\\d+\\}$", arg.toString())) {
@@ -109,6 +109,17 @@ public class DBUtils
 
         if ( arg instanceof Blob) {
             return String.format("'%s'", blobToString((Blob)arg));
+        }
+
+        if ( arg instanceof Map) {
+            if(arg == null) {
+                return "''";
+            }
+            arg = JsonUtils.toJson(arg);
+            if(arg == null) {
+                return "''";
+            }
+            return String.format("'%s'", JsonUtils.toJson(arg));
         }
 
         if(arg.getClass().isEnum()) {
@@ -205,6 +216,7 @@ public class DBUtils
         }
         return arg.toString()
                 .replaceAll( "'", "" )
+                .replaceAll( "\"", "“" )
                 //.replaceAll("%", "％")
                 .replaceAll("\\*", "×")
                 //.replaceAll(";", "；")
