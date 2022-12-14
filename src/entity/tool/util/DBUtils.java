@@ -111,7 +111,7 @@ public class DBUtils
             return String.format("'%s'", blobToString((Blob)arg));
         }
 
-        if ( arg instanceof Map) {
+        if ( (arg instanceof Map) || (arg instanceof List) ) {
             if(arg == null) {
                 return "''";
             }
@@ -699,12 +699,21 @@ public class DBUtils
                     try {
                         if(columnValue instanceof String) {
                             if(columnValue!=null) {
-                                Map map = null;
-                                String json = columnValue.toString().replace("\\\"", "\"").replace("\"{", "{").replace("}\"", "}").trim();
-                                if(StringUtils.isNotEmpty(json) && json.startsWith("{") && json.endsWith("}")) {
-                                    map = JsonUtils.parse(json, Map.class);
-                                    if(map!=null) {
-                                        columnValue = map;
+                                String json = columnValue.toString().replace("\\\"", "\"")
+                                        .replace("\"[", "[").replace("]\"", "]")
+                                        .replace("\"{", "{").replace("}\"", "}").trim();
+                                if(StringUtils.isNotEmpty(json)) {
+                                    if(json.startsWith("{") && json.endsWith("}")) {
+                                        Map map = JsonUtils.parse(json, Map.class);
+                                        if(map!=null) {
+                                            columnValue = map;
+                                        }
+                                    }
+                                    else if(json.startsWith("[") && json.endsWith("]")) {
+                                        List list = JsonUtils.toList(json, Map.class);
+                                        if(list!=null) {
+                                            columnValue = list;
+                                        }
                                     }
                                 }
                             }
