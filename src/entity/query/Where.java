@@ -49,7 +49,11 @@ public final class Where<T> extends QueryableAction<T> {
         return where(exp, values, ", ");
     }
 
-   public <E> Where<T> where(String exp, E[] values, String spliter) {
+	public <E> Where<T> where(String exp, E[] values, String spliter) {
+		return where(null, exp, values, spliter);
+	}
+
+   public <E> Where<T> where(Condition condition, String exp, E[] values, String spliter) {
         Where<T> clause = new Where<T>();
         clause.init(this.genericType, this.entityObject(), getParser(), this);
         List<String> args = new ArrayList<String>();
@@ -61,14 +65,35 @@ public final class Where<T> extends QueryableAction<T> {
             exp = String.format( exp, StringUtils.join( spliter, args ) );
         }
 
-        clause.getParser().addWhere(exp);
+		if(condition == null) {
+			clause.getParser().addWhere(exp);
+		}
+		else {
+			clause.getParser().addWhere(condition, exp);
+		}
 
         return clause;
     }
 
-    public Where<T> or(String exp) {
-        return where(Condition.OR, exp);
+	public <E> Where<T> or(String exp, List<E> values) {
+		return where(Condition.OR, exp, values.toArray(), ", ");
+	}
+
+    public <E> Where<T> or(String exp, E[] values) {
+        return where(Condition.OR, exp, values, ", ");
     }
+
+	public Where<T> or(String exp) {
+		return where(Condition.OR, exp);
+	}
+
+	public <E> Where<T> and(String exp, List<E> values) {
+		return where(Condition.AND, exp, values.toArray(), ", ");
+	}
+
+	public <E> Where<T> and(String exp, E[] values) {
+		return where(Condition.AND, exp, values, ", ");
+	}
 
     public Where<T> and(String exp) {
         return where(Condition.AND, exp);
