@@ -45,7 +45,7 @@ public final class Where<T> extends QueryableAction<T> {
         return where(exp, values.toArray(), ", ");
     }
 
-    public <E> Where<T> where(String exp, E[] values) {
+    public <E> Where<T> where(String exp, E[] ...values) {
         return where(exp, values, ", ");
     }
 
@@ -79,7 +79,7 @@ public final class Where<T> extends QueryableAction<T> {
 		return where(Condition.OR, exp, values.toArray(), ", ");
 	}
 
-    public <E> Where<T> or(String exp, E[] values) {
+    public <E> Where<T> or(String exp, E[] ...values) {
         return where(Condition.OR, exp, values, ", ");
     }
 
@@ -91,7 +91,7 @@ public final class Where<T> extends QueryableAction<T> {
 		return where(Condition.AND, exp, values.toArray(), ", ");
 	}
 
-	public <E> Where<T> and(String exp, E[] values) {
+	public <E> Where<T> and(String exp, E[] ...values) {
 		return where(Condition.AND, exp, values, ", ");
 	}
 
