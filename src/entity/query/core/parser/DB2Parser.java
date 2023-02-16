@@ -120,7 +120,7 @@ public class DB2Parser extends SqlParserBase {
 
         String alterString = "";
         String set = " ";
-
+        String defaultValue = "";
         if(isAlter) {
             if(col.getAlterMode() == null) {
                 col.setAlterMode(AlterMode.CHANGE);
@@ -136,25 +136,25 @@ public class DB2Parser extends SqlParserBase {
                                 "LONG".equals(col.getDataType().toUpperCase()) ||
                                 "INT".equals(col.getDataType().toUpperCase()) ||
                                 "BIGINT".equals(col.getDataType().toUpperCase()) ) ) {
-                    sb.append(String.format(" default %s ", col.getDefaultValue()));
+                    defaultValue = String.format(" default %s ", col.getDefaultValue());
                 }
                 else {
-                    sb.append(String.format(" default '%s' ", col.getDefaultValue()));
+                    defaultValue = String.format(" default '%s' ", col.getDefaultValue());
                 }
             }
         }
 
         sb.append(",");
         if("decimal".equals(type.toLowerCase())){
-            sb.append(alterString + col.getColumnName() + set + type + String.format("(%s, 4)", len));
+            sb.append(alterString + col.getColumnName() + set + type + String.format("(%s, 4)", len) + defaultValue);
         }
 
         else if("varchar".equals(type.toLowerCase())) {
-            sb.append(alterString + col.getColumnName() + set + type + String.format("(%s)", len));
+            sb.append(alterString + col.getColumnName() + set + type + String.format("(%s)", len) + defaultValue);
         }
 
         else {
-            sb.append(alterString + col.getColumnName() + set + type);
+            sb.append(alterString + col.getColumnName() + set + type + defaultValue);
         }
 
         if(col.isCanNotNull()) {

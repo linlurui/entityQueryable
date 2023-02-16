@@ -155,6 +155,7 @@ public class SybaseParser extends SqlParserBase
         String type = getDbType(col.getType(), col.getDataType());
 
         String alterString = "";
+        String defaultValue = "";
         if(isAlter) {
             if(col.getAlterMode() == null) {
                 col.setAlterMode(AlterMode.CHANGE);
@@ -174,21 +175,21 @@ public class SybaseParser extends SqlParserBase
                                 "LONG".equals(col.getDataType().toUpperCase()) ||
                                 "INT".equals(col.getDataType().toUpperCase()) ||
                                 "BIGINT".equals(col.getDataType().toUpperCase()) ) ) {
-                    sb.append(String.format(" default %s ", col.getDefaultValue()));
+                    defaultValue = String.format(" default %s ", col.getDefaultValue());
                 }
                 else {
-                    sb.append(String.format(" default '%s' ", col.getDefaultValue()));
+                    defaultValue = String.format(" default '%s' ", col.getDefaultValue());
                 }
             }
         }
 
         sb.append(",");
         if("decimal".equals(type.toLowerCase())){
-            sb.append(alterString + "`"+ col.getColumnName() + "` " + type + String.format("(%s, 4)", len));
+            sb.append(alterString + "`"+ col.getColumnName() + "` " + type + String.format("(%s, 4)", len) + defaultValue);
         }
 
         else {
-            sb.append(alterString + "`"+ col.getColumnName() + "` " + type + String.format("(%s)", len));
+            sb.append(alterString + "`"+ col.getColumnName() + "` " + type + String.format("(%s)", len) + defaultValue);
         }
 
         if(col.isCanNotNull()) {

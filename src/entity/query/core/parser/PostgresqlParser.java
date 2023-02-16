@@ -119,7 +119,7 @@ public class PostgresqlParser extends MysqlParser {
 		String alterString = "";
 		String left = "";
 		String right = "";
-
+		String defaultValue = "";
 		if(isAlter) {
 			if(col.getAlterMode() == null) {
 				col.setAlterMode(AlterMode.CHANGE);
@@ -133,16 +133,16 @@ public class PostgresqlParser extends MysqlParser {
 								"LONG".equals(col.getDataType().toUpperCase()) ||
 								"INT".equals(col.getDataType().toUpperCase()) ||
 								"BIGINT".equals(col.getDataType().toUpperCase()) ) ) {
-					sb.append(String.format(" default %s ", col.getDefaultValue()));
+					defaultValue = String.format(" default %s ", col.getDefaultValue());
 				}
 				else {
-					sb.append(String.format(" default '%s' ", col.getDefaultValue()));
+					defaultValue = String.format(" default '%s' ", col.getDefaultValue());
 				}
 			}
 		}
 
 		sb.append(",");
-		sb.append(alterString + "\""+ col.getColumnName() + "\" " + type );
+		sb.append(alterString + "\""+ col.getColumnName() + "\" " + type +defaultValue);
 
 
 		if(col.isCanNotNull()) {
