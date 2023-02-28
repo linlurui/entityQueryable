@@ -283,7 +283,11 @@ public class ApplicationConfig  {
         }
 
         if(configMap.containsKey(key) && configMap.get(key)!=null && StringUtils.isNotEmpty(configMap.get(key).toString())) {
-            return (T) StringUtils.cast(defaultValue.getClass(), configMap.get(key).toString());
+            Class clazz = String.class;
+            if(defaultValue != null) {
+                clazz = defaultValue.getClass();
+            }
+            return (T) StringUtils.cast(clazz, configMap.get(key).toString());
         }
 
         return defaultValue;
@@ -338,7 +342,7 @@ public class ApplicationConfig  {
         if(result instanceof Map) {
             if(keyList.size() > 0 && result.containsKey(keyList.get(keyList.size() - 1)) &&
                     result.get(keyList.get(keyList.size() - 1)) instanceof List) {
-                
+
             }
         }
 
