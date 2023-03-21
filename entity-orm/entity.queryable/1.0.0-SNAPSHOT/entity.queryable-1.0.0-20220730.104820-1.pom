@@ -1,0 +1,221 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>entity-orm</groupId>
+	<artifactId>entity.queryable</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <distributionManagement>
+		<repository>
+			<id>entity-orm</id>
+			<url>file:${project.build.directory}/deploy</url>
+		</repository>
+	</distributionManagement>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>org.jdom</groupId>
+			<artifactId>jdom</artifactId>
+			<version>2.0.2</version>
+		</dependency>
+
+		<!-- Slf4j 依赖 -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>1.7.30</version>
+		</dependency>
+		<!-- logback 依赖 -->
+		<!--<dependency>-->
+			<!--<groupId>ch.qos.logback</groupId>-->
+			<!--<artifactId>logback-classic</artifactId>-->
+			<!--<version>1.2.3</version>-->
+		<!--</dependency>-->
+
+		<dependency>
+			<groupId>com.lmax</groupId>
+			<artifactId>disruptor</artifactId>
+			<version>3.3.6</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>druid</artifactId>
+			<version>1.1.21</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.esotericsoftware</groupId>
+			<artifactId>reflectasm</artifactId>
+			<version>1.11.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.12.5</version>
+		</dependency>
+		<dependency><!--XML 解析工具类-->
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+			<version>2.12.5</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>fastjson</artifactId>
+			<version>1.2.47</version>
+		</dependency>
+
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>1.25</version>
+        </dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>2.12.5</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.davidmoten</groupId>
+			<artifactId>rxjava2-jdbc</artifactId>
+			<version>0.2.0</version><!--注意：0.2.0 以上版本连接池有问题，不能升版本-->
+			<exclusions>
+				<exclusion>
+					<groupId>io.reactivex.rxjava2</groupId>
+					<artifactId>rxjava</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>commons-io</groupId>
+					<artifactId>commons-io</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.7</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.reactivex.rxjava2</groupId>
+			<artifactId>rxjava</artifactId>
+			<version>2.2.19</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<defaultGoal>compile</defaultGoal>
+		<sourceDirectory>src</sourceDirectory>
+		<resources>
+			<resource>
+				<directory>src</directory>
+				<excludes>
+					<exclude>**/*.java</exclude>
+				</excludes>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.6.0</version>
+				<configuration>
+					<source>1.8</source>
+					<target>1.8</target>
+				</configuration>
+			</plugin>
+
+			<!-- Allatori plugin start -->
+			<!--<plugin>-->
+				<!--<groupId>org.apache.maven.plugins</groupId>-->
+				<!--<artifactId>maven-resources-plugin</artifactId>-->
+				<!--<version>2.6</version>-->
+				<!--<executions>-->
+					<!--<execution>-->
+						<!--<id>copy-and-filter-allatori-config</id>-->
+						<!--<phase>package</phase>-->
+						<!--<goals>-->
+							<!--<goal>copy-resources</goal>-->
+						<!--</goals>-->
+						<!--<configuration>-->
+							<!--<outputDirectory>${basedir}/target</outputDirectory>-->
+							<!--<resources>-->
+								<!--<resource>-->
+									<!--<directory>${basedir}/allatori/config</directory>-->
+									<!--<includes>-->
+										<!--<include>ccweb-pdf.xml</include>-->
+									<!--</includes>-->
+									<!--<filtering>true</filtering>-->
+								<!--</resource>-->
+							<!--</resources>-->
+						<!--</configuration>-->
+					<!--</execution>-->
+				<!--</executions>-->
+			<!--</plugin>-->
+			<!--<plugin>-->
+				<!--<groupId>org.codehaus.mojo</groupId>-->
+				<!--<artifactId>exec-maven-plugin</artifactId>-->
+				<!--<executions>-->
+					<!--<execution>-->
+						<!--<id>run-allatori</id>-->
+						<!--<phase>package</phase>-->
+						<!--<goals>-->
+							<!--<goal>exec</goal>-->
+						<!--</goals>-->
+					<!--</execution>-->
+				<!--</executions>-->
+				<!--<configuration>-->
+					<!--<executable>java</executable>-->
+					<!--<arguments>-->
+						<!--<argument>-Xms128m</argument>-->
+						<!--<argument>-Xmx512m</argument>-->
+						<!--<argument>-jar</argument>-->
+						<!--<argument>${basedir}/allatori/lib/allatori.jar</argument>-->
+						<!--<argument>${basedir}/allatori/config/allatori.xml</argument>-->
+					<!--</arguments>-->
+				<!--</configuration>-->
+			<!--</plugin>-->
+			<!-- Allatori plugin end -->
+
+			<!--<plugin>-->
+				<!--<artifactId>maven-deploy-plugin</artifactId>-->
+				<!--<version>2.8.1</version>-->
+				<!--<configuration>-->
+					<!--<altDeploymentRepository>internal.repo::default::file://${project.build.directory}/entityQueryable</altDeploymentRepository>-->
+				<!--</configuration>-->
+			<!--</plugin>-->
+			<!--<plugin>-->
+				<!--<groupId>com.github.github</groupId>-->
+				<!--<artifactId>site-maven-plugin</artifactId>-->
+				<!--<version >0.12</version>-->
+				<!--<configuration>-->
+					<!--<message >Maven artifacts for ${project.version}</message>-->
+					<!--<noJekyll>true</noJekyll>-->
+					<!--<outputDirectory>${project.build.directory}/entityQueryable</outputDirectory>&lt;!&ndash;本地jar地址&ndash;&gt;-->
+					<!--<branch>refs/heads/1.0</branch>&lt;!&ndash;分支的名称&ndash;&gt;-->
+					<!--<merge>true</merge>-->
+					<!--<includes>-->
+						<!--<include>**/*</include>-->
+					<!--</includes>-->
+					<!--<repositoryName>entityQueryable</repositoryName>&lt;!&ndash;对应github上创建的仓库名称 name&ndash;&gt;-->
+					<!--<repositoryOwner>linlurui</repositoryOwner>&lt;!&ndash;github 仓库所有者即登录用户名&ndash;&gt;-->
+				<!--</configuration>-->
+				<!--<executions>-->
+					<!--<execution>-->
+						<!--<goals>-->
+							<!--<goal>site</goal>-->
+						<!--</goals>-->
+						<!--<phase>deploy</phase>-->
+					<!--</execution>-->
+				<!--</executions>-->
+			<!--</plugin>-->
+		</plugins>
+	</build>
+	<properties>
+		<github.global.server>github</github.global.server>
+	</properties>
+</project>
