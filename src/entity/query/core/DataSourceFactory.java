@@ -679,13 +679,12 @@ public final class DataSourceFactory {
 				return dataSourceMap.get(ann.id());
 			}
 
-			if(ann.port() > 0 &&
-					!StringUtils.isEmpty(ann.db()) &&
-					!StringUtils.isEmpty(ann.driverType()) &&
-					!StringUtils.isEmpty(ann.dbType()) &&
-					!StringUtils.isEmpty(ann.uid()) &&
-					!StringUtils.isEmpty(ann.pwd()) &&
-					!StringUtils.isEmpty(ann.server())) {
+			if(
+					StringUtils.isNotEmpty(ann.driver()) &&
+					StringUtils.isNotEmpty(ann.db()) &&
+					StringUtils.isNotEmpty(ann.driverType()) &&
+					StringUtils.isNotEmpty(ann.dbType())
+			) {
 
 
 				if(dataSourceMap.containsKey(ann.id())) {
@@ -778,7 +777,7 @@ public final class DataSourceFactory {
 		}
 
 		else if("sqlite".equalsIgnoreCase(dbType.trim())) {
-			return String.format("%s:%s://%s", driverType, dbType, db);
+			return String.format("%s:%s:%s", driverType, dbType, db);
 		}
 
 		else if("couchbase".equalsIgnoreCase(dbType.trim())) {

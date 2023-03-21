@@ -540,7 +540,17 @@ public class DBUtils
             if(sql.toLowerCase().trim().startsWith("insert")) {
                 ResultSet generatedKeys = preparedstatement.getGeneratedKeys();
                 while (generatedKeys.next()) {
-                    rs = generatedKeys.getInt(1);
+                    try {
+                        rs = generatedKeys.getInt(1);
+                    }
+                    catch (Exception e) {
+                        if(rs>0) {
+                            break;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
                 }
             }
 

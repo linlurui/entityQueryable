@@ -21,31 +21,31 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SqlParserFactory<T> {
-	
+
 	private static final Logger log = LoggerFactory.getLogger( SqlParserFactory.class );
-	
+
 	private SqlParserFactory() {
-		
+
 	}
-	
+
 	@SuppressWarnings("rawtypes")
 	private volatile static SqlParserFactory singleton;
-	
+
 	@SuppressWarnings("rawtypes")
-	public static SqlParserFactory getInstance() {  
-		if (singleton == null) {  
+	public static SqlParserFactory getInstance() {
+		if (singleton == null) {
 			synchronized (DataSourceFactory.class) {
-				if (singleton == null) {  
-					singleton = new SqlParserFactory();  
+				if (singleton == null) {
+					singleton = new SqlParserFactory();
 				}
 			}
 		}
-		
+
 		return singleton;
 	}
-	
+
 	public ISqlParser CreateParser(Class<T> clazz) throws Exception {
-		
+
 		String type = null;
 		DataSource ds = null;
 		String dsname = DataSourceFactory.findDataSourceAnnotation(clazz);
@@ -66,9 +66,10 @@ public class SqlParserFactory<T> {
 				}
 			} else {
 				type = ann.dbType();
+				ds = DataSourceFactory.getInstance().getDataSource(ann);
 			}
 		}
-		
+
 		else {
 			try {
 				ds = DataSourceFactory.getInstance().getDataSource();
@@ -83,7 +84,7 @@ public class SqlParserFactory<T> {
 		}
 
 		ISqlParser parser = createParser(ds);
-		
+
 		return parser;
 	}
 
