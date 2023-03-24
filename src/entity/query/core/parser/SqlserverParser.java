@@ -115,7 +115,7 @@ public class SqlserverParser extends SqlParserBase
     }
 
     @Override
-    public <T> String getAlterTableSql(String tablename, List<ColumnInfo> columns) {
+    public <T> String getAlterTableSql(String tablename, List<ColumnInfo> columns, List<ColumnInfo> storedColumns) {
 
         if(isEmpty(tablename)) {
             return null;

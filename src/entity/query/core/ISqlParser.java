@@ -84,7 +84,7 @@ public interface ISqlParser {
 
 	<T> String getCreateTableSql(String tablename, List<ColumnInfo> columns);
 
-	<T> String getAlterTableSql(String tablename, List<ColumnInfo> columns);
+	<T> String getAlterTableSql(String tablename, List<ColumnInfo> columns, List<ColumnInfo> storedColumns);
 
 	<T> String getTableExistSql(String tablename);
 

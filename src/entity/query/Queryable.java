@@ -382,8 +382,13 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 		}
 
 		DataSource dataSource = DataSourceFactory.getInstance().getDataSource(dataSourceId);
-		String sql = SqlParserFactory.createParser(dataSource).getAlterTableSql(tablename, columns);
 		DBTransaction tran = dataSource.beginTransaction();
+		String columnListSql = SqlParserFactory.createParser(dataSource).getColumnInfoListSql(tablename);
+		List<ColumnInfo> oldColumns = new ArrayList<>();
+		if("sqlite".equals(dataSource.getDbType())) {
+			oldColumns = DBExecutorAdapter.createExecutor(dataSource).query(ColumnInfo.class, columnListSql);
+		}
+		String sql = SqlParserFactory.createParser(dataSource).getAlterTableSql(tablename, columns, oldColumns);
 		List<String> sqlList = StringUtils.splitString2List(sql, ";");
 		try {
 			for (String stm : sqlList) {

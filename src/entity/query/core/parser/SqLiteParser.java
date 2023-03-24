@@ -22,6 +22,7 @@ import java.sql.Blob;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static entity.tool.util.StringUtils.isEmpty;
@@ -117,7 +118,7 @@ public class SqLiteParser extends MysqlParser {
     }
 
     @Override
-    public <T> String getAlterTableSql(String tablename, List<ColumnInfo> columns) {
+    public <T> String getAlterTableSql(String tablename, List<ColumnInfo> columns, List<ColumnInfo> storedColumns) {
 
         if(isEmpty(tablename)) {
             return null;
@@ -138,16 +139,23 @@ public class SqLiteParser extends MysqlParser {
                     (col.getType() == null && StringUtils.isEmpty(col.getDataType()))) {
                 continue;
             }
+            Optional<ColumnInfo> opt = storedColumns.stream().filter(a -> a.getColumnName().equals(col.getColumnName())).findFirst();
             if(StringUtils.isNotEmpty(col.getColumnNameOld())) {
                 oldColumns.add(col.getColumnNameOld());
             }
             else {
-                oldColumns.add(col.getColumnName());
+                if(opt.isPresent()) {
+                    oldColumns.add(col.getColumnName());
+                }
             }
-            newColumns.add(col.getColumnName());
+            if(opt.isPresent()) {
+                newColumns.add(col.getColumnName());
+            }
         }
-        sb.append("insert into ["+tmpTable+"] (["+ StringUtils.join("], [", newColumns) +"])" +
-                "select ["+ StringUtils.join("], [", oldColumns) +"] from [" + tablename + "];");
+        if(newColumns.size()>0 && newColumns.size()==oldColumns.size()) {
+            sb.append("insert into [" + tmpTable + "] ([" + StringUtils.join("], [", newColumns) + "])" +
+                    "select [" + StringUtils.join("], [", oldColumns) + "] from [" + tablename + "];");
+        }
         sb.append(String.format("drop table %s;", tablename));
         sb.append(String.format("alter table %s rename to %s;", tmpTable, tablename));
         //sb.append("COMMIT;");
