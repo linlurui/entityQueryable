@@ -162,16 +162,17 @@ public class MysqlParser extends SqlParserBase {
     @Override
     public String getTablesSql()
     {
-        return String.format( "%s UNION %s;",
-                String.format( "SELECT table_name, 'table' as type FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='%s'", schema() ),
-                String.format( "SELECT table_name, 'view' as type FROM INFORMATION_SCHEMA.views WHERE TABLE_SCHEMA = '%s';", schema() )
-        );
+//        return String.format( "%s UNION %s;",
+//                String.format( "SELECT table_name, 'table' as type FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='%s'", schema() ),
+//                String.format( "SELECT table_name, 'view' as type FROM INFORMATION_SCHEMA.views WHERE TABLE_SCHEMA = '%s';", schema() )
+//        );
+		return String.format( "SELECT table_name, (case TABLE_TYPE when 'VIEW' then 'view' else 'table' end) as type, TABLE_COMMENT as description FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='%s'", schema() );
     }
 
 	@Override
 	public String getColumnInfoListSql(String tablename)
 	{
-		return String.format( "select COLUMN_NAME as column_name,COLUMN_COMMENT as column_comment,DATA_TYPE as data_type, case EXTRA when 'auto_increment' then 1 else 0 end as isAutoIncrement from information_schema.COLUMNS where TABLE_NAME='%s' and TABLE_SCHEMA='%s'", tablename, schema() );
+		return String.format( "select COLUMN_NAME as column_name,COLUMN_COMMENT as column_comment,DATA_TYPE as data_type, case EXTRA when 'auto_increment' then 1 else 0 end as isAutoIncrement, CHARACTER_MAXIMUM_LENGTH as maxLength, NUMERIC_SCALE as `numericScale`, COLUMN_COMMENT as columnComment, (case IS_NULLABLE when 'YES' then 0 else 1 end) as canNotNull, COLUMN_DEFAULT as defaultValue, case COLUMN_KEY when 'PRI' then 1 else 0 end as isPrimaryKey from information_schema.COLUMNS where TABLE_NAME='%s' and TABLE_SCHEMA='%s'", tablename, schema() );
 	}
 
 	@Override

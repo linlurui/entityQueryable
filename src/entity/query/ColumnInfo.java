@@ -138,6 +138,32 @@ public class ColumnInfo implements Serializable {
 
 	private int maxLength;
 
+	public Boolean getAutoIncrement() {
+		return isAutoIncrement;
+	}
+
+	public void setAutoIncrement(Boolean autoIncrement) {
+		isAutoIncrement = autoIncrement;
+	}
+
+	public Boolean getPrimaryKey() {
+		return isPrimaryKey;
+	}
+
+	public void setPrimaryKey(Boolean primaryKey) {
+		isPrimaryKey = primaryKey;
+	}
+
+	public int getNumericScale() {
+		return numericScale;
+	}
+
+	public void setNumericScale(int numericScale) {
+		this.numericScale = numericScale;
+	}
+
+	private int numericScale;
+
 	public int getMaxLength() {
 		return maxLength;
 	}

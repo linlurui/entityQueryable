@@ -19,7 +19,16 @@ public class TableInfo {
         this.type = type;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     @Fieldname(value = "table_name")
     private String tableName;
     private String type;
+    private String description;
 }
