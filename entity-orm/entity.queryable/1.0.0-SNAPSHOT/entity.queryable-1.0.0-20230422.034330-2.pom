@@ -16,8 +16,8 @@
 
 		<dependency>
 			<groupId>org.jdom</groupId>
-			<artifactId>jdom</artifactId>
-			<version>2.0.2</version>
+			<artifactId>jdom2</artifactId>
+			<version>2.0.6.1</version>
 		</dependency>
 
 		<!-- Slf4j 依赖 -->
@@ -54,7 +54,7 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.12.5</version>
+			<version>2.14.0-rc1</version>
 		</dependency>
 		<dependency><!--XML 解析工具类-->
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -65,13 +65,13 @@
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
-			<version>1.2.47</version>
+			<version>1.2.83</version>
 		</dependency>
 
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.25</version>
+            <version>1.29</version>
         </dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
