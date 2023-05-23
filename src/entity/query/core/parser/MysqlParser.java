@@ -138,6 +138,15 @@ public class MysqlParser extends SqlParserBase {
 			sql = String.format("\nSELECT %s FROM %s INNER JOIN (%s) AS a ON a.%s=%s.%s %s\n", selectText, fromText, sql, primaryKey, alias, primaryKey, orderByText);
 		} else {
 			sql = String.format("\nSELECT %s FROM %s %s %s %s %s", selectText, fromText, joinText, whereText, groupByText, orderByText);
+			if(Pattern.matches(".+ AS (.+)", container.From.toString())) {
+				Matcher matcher = Pattern.compile(".+ AS (.+)").matcher(container.From.toString());
+				if(matcher.find()) {
+					String as = matcher.group(1);
+					if (Pattern.matches(String.format("(.*=\\s*%s\\..*|%s\\..*=.*)", as.trim(), as.trim()), container.On.get(0))) {
+						sql = String.format("\nSELECT %s FROM %s %s %s %s %s", selectText, container.From.toString(), joinText, whereText, groupByText, orderByText);
+					}
+				}
+			}
 			if(skip > 0 || top > 0) {
 				sql += getSkipAndTop(skip, top);
 			}
