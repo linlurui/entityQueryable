@@ -38,7 +38,8 @@ public class ApplicationConfig  {
             return instance;
         }
         synchronized (configMap) {
-            return new ApplicationConfig();
+            instance = new ApplicationConfig();
+            return instance;
         }
     }
 
