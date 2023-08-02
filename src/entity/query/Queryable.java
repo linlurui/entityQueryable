@@ -77,6 +77,15 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 		return json;
 	}
 
+	public String getViewDefined() throws SQLException {
+		String sql = this.toString(CommandMode.GetViewSql);
+		Map<String, String> result = DBExecutorAdapter.createExecutor(this, getGenericType()).first(Map.class, sql);
+		if(result!=null && result.containsKey("sql")) {
+			return result.get("sql");
+		}
+		return null;
+	}
+
 	/***
 	 * to sql string
 	 * @param commandMode
