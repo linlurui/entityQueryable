@@ -14,6 +14,7 @@ package entity.query.core.parser;
 import entity.query.ColumnInfo;
 import entity.query.core.DataSource;
 import entity.query.enums.AlterMode;
+import entity.tool.util.OutParameter;
 import entity.tool.util.StringUtils;
 
 import java.lang.reflect.Type;
@@ -32,6 +33,14 @@ public class SqLiteParser extends MysqlParser {
 	public SqLiteParser(DataSource ds) {
 		super(ds);
 	}
+
+    @Override
+    public <T> String getViewDefinedSql(Class<T> clazz) {
+        OutParameter<Class<T>> param = new OutParameter<Class<T>>();
+        param.setData(clazz);
+        String tablename = getTablename(param);
+        return String.format( "select sql from sqlite_master where type='view' and tbl_name='%s';", tablename );
+    }
 
     @Override
     public String getPrefix() {
