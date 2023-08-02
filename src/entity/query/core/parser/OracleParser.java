@@ -37,6 +37,14 @@ public class OracleParser extends SqlParserBase {
 	}
 
 	@Override
+	public <T> String getViewDefinedSql(Class<T> clazz) {
+		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
+		param.setData(clazz);
+		String tablename = getTablename(param);
+		return String.format( "SELECT text as sql from dba_views where view_name = '%s'", tablename );
+	}
+
+	@Override
 	public String getPrefix() {
 		return "\"";
 	}

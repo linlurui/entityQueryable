@@ -47,6 +47,11 @@ public abstract class SqlParserBase implements ISqlParser {
 	}
 
 	@Override
+	public <T> String getViewDefinedSql(Class<T> clazz) {
+		return null;
+	}
+
+	@Override
 	public String schema() {
 		return this.dataSource.getSchema();
 	}
@@ -669,6 +674,8 @@ public abstract class SqlParserBase implements ISqlParser {
 		    return getColumnInfoListSql(exp);
 		case PrimaryKey:
 			return  getPrimaryKeySpl(exp);
+		case GetViewSql:
+			return getViewDefinedSql(clazz);
 		default:
 			sql = getSelectSql(clazz, skip, top, isCount);
 			break;

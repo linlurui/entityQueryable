@@ -16,6 +16,7 @@ import entity.query.ColumnInfo;
 import entity.query.core.DataSource;
 import entity.query.core.SqlParserBase;
 import entity.query.enums.AlterMode;
+import entity.tool.util.OutParameter;
 import entity.tool.util.StringUtils;
 
 import java.lang.reflect.Type;
@@ -34,6 +35,14 @@ public class SqlserverParser extends SqlParserBase
     public SqlserverParser( DataSource ds )
     {
         super( ds );
+    }
+
+    @Override
+    public <T> String getViewDefinedSql(Class<T> clazz) {
+		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
+		param.setData(clazz);
+		String tablename = getTablename(param);
+        return String.format( "SELECT definition as sql FROM sys.sql_modules WHERE object_id = object_id('%s.%s');", schema(), tablename );
     }
 
     @Override

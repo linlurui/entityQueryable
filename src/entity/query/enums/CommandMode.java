@@ -20,9 +20,10 @@ public enum CommandMode
     UpdateFrom,
     Delete,
     DeleteFrom,
-    Exist, 
+    Exist,
     SelectCount,
     Tables,
     ColumnsInfo,
     PrimaryKey,
+    GetViewSql,
 }

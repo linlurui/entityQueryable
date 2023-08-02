@@ -68,6 +68,8 @@ public interface ISqlParser {
 
 	<T> String getSelectExistSql(Class<T> clazz);
 
+	<T> String getViewDefinedSql(Class<T> clazz);
+
 	<T> String toString(Class<T> clazz, String exp, CommandMode cmdMode, Object obj, int skip, int top, Boolean isCount, Map<Integer, Blob> blobMap);
 
 	String getSelectNow();
