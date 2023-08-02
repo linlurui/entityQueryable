@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import entity.tool.util.jackson.ObjectMapperDateFormatExtend;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,9 +101,15 @@ public class JsonUtils
     /**
      * obj to json
      */
-    public static String toJson( Object src )
+    public static String toJson( Object src ) {
+        return toJson(src, null);
+    }
+    public static String toJson( Object src, SerializationFeature feature )
     {
         try {
+            if(feature!=null) {
+                mapper.enable(feature);
+            }
 			return mapper.writeValueAsString( src );
 		} catch (JsonProcessingException e) {}
 
