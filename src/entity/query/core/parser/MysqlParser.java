@@ -48,6 +48,7 @@ public class MysqlParser extends SqlParserBase {
 		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
 		param.setData(clazz);
 		String tablename = getTablename(param);
+		tablename = tablename.replace(getPrefix(), "").replace(getSuffix(), "");
 		return String.format( "SELECT VIEW_DEFINITION as sql FROM INFORMATION_SCHEMA.views WHERE TABLE_SCHEMA='%s' AND TABLE_NAME='%s' LIMIT 1;", schema(), tablename );
 	}
 

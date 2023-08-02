@@ -42,6 +42,7 @@ public class SqlserverParser extends SqlParserBase
 		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
 		param.setData(clazz);
 		String tablename = getTablename(param);
+        tablename = tablename.replace(getPrefix(), "").replace(getSuffix(), "");
         return String.format( "SELECT definition as sql FROM sys.sql_modules WHERE object_id = object_id('%s.%s');", schema(), tablename );
     }
 

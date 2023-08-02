@@ -39,6 +39,7 @@ public class SqLiteParser extends MysqlParser {
         OutParameter<Class<T>> param = new OutParameter<Class<T>>();
         param.setData(clazz);
         String tablename = getTablename(param);
+        tablename = tablename.replace(getPrefix(), "").replace(getSuffix(), "");
         return String.format( "select sql from sqlite_master where type='view' and tbl_name='%s';", tablename );
     }
 

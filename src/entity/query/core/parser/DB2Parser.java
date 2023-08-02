@@ -41,6 +41,7 @@ public class DB2Parser extends SqlParserBase {
 		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
 		param.setData(clazz);
 		String tablename = getTablename(param);
+        tablename = tablename.replace(getPrefix(), "").replace(getSuffix(), "");
         return String.format( "select sql from sqlite_master where type='view' and tbl_name='%s' limit 1;", tablename );
     }
 

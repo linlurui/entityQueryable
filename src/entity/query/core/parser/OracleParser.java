@@ -41,6 +41,7 @@ public class OracleParser extends SqlParserBase {
 		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
 		param.setData(clazz);
 		String tablename = getTablename(param);
+		tablename = tablename.replace(getPrefix(), "").replace(getSuffix(), "");
 		return String.format( "SELECT text as sql from dba_views where view_name = '%s'", tablename );
 	}
 
