@@ -298,6 +298,14 @@ public final class DataSourceFactory {
 				dataSource.setMinEvictableIdleTimeMillis(Long.parseLong(StringUtils.toString(item.get("minEvictableIdleTimeMillis"))));
 			}
 
+			if (item.containsKey("maxEvictableIdleTimeMillis") && item.get("maxEvictableIdleTimeMillis") != null) {
+				dataSource.setMaxEvictableIdleTimeMillis(Long.parseLong(StringUtils.toString(item.get("maxEvictableIdleTimeMillis"))));
+			}
+
+			if (item.containsKey("timeBetweenEvictionRunsMillis") && item.get("timeBetweenEvictionRunsMillis") != null) {
+				dataSource.setTimeBetweenEvictionRunsMillis(Long.parseLong(StringUtils.toString(item.get("timeBetweenEvictionRunsMillis"))));
+			}
+
 			if (item.containsKey("filters") && item.get("filters") != null) {
 				if (StringUtils.isNotEmpty(StringUtils.toString(item.get("filters")))) {
 					try {
@@ -564,6 +572,24 @@ public final class DataSourceFactory {
 						if (StringUtils.isNotEmpty(minEvictableIdleTimeMillis)) {
 							long value = NumberUtils.parseInt(minEvictableIdleTimeMillis);
 							dataSource.setMinEvictableIdleTimeMillis(value);
+						}
+						continue;
+					}
+
+					if ("maxEvictableIdleTimeMillis".equalsIgnoreCase(child.getAttribute("name").getValue())) {
+						String maxEvictableIdleTimeMillis = child.getAttribute("value").getValue();
+						if (StringUtils.isNotEmpty(maxEvictableIdleTimeMillis)) {
+							long value = NumberUtils.parseInt(maxEvictableIdleTimeMillis);
+							dataSource.setMaxEvictableIdleTimeMillis(value);
+						}
+						continue;
+					}
+
+					if ("timeBetweenEvictionRunsMillis".equalsIgnoreCase(child.getAttribute("name").getValue())) {
+						String timeBetweenEvictionRunsMillis = child.getAttribute("value").getValue();
+						if (StringUtils.isNotEmpty(timeBetweenEvictionRunsMillis)) {
+							long value = NumberUtils.parseInt(timeBetweenEvictionRunsMillis);
+							dataSource.setTimeBetweenEvictionRunsMillis(value);
 						}
 						continue;
 					}
