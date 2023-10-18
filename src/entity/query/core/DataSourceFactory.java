@@ -366,7 +366,7 @@ public final class DataSourceFactory {
 			dataSource.setMaxPoolPreparedStatementPerConnectionSize(20);
 		}
 		dataSource.setTimeBetweenEvictionRunsMillis(60000);
-		dataSource.setKeepAlive(true);
+		dataSource.setKeepAlive(false);
 		dataSource.setInitialSize(5);
 		dataSource.setMaxActive(100);
 		dataSource.setMinIdle(5);
