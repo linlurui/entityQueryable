@@ -415,6 +415,8 @@ public class DBUtils
                     return query(clazz, returnType, sql, isScalar, conn, datasource);
                 }
             }
+            log.error(e.getMessage(), e);
+            throw e;
         }
 
         return list;
@@ -626,6 +628,7 @@ public class DBUtils
             else {
                 datasource.rollback(conn);
             }
+            log.error(e.getMessage(), e);
             throw e;
         } finally
         {
