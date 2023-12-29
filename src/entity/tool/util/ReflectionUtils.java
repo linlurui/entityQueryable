@@ -11,9 +11,9 @@
 package entity.tool.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.UUID;
@@ -107,13 +107,11 @@ public class ReflectionUtils {
 
             if(value == null && access.getParameterTypes()[access.getIndex(method)].length == 1) {
                 if ("java.lang.String".equals(access.getParameterTypes()[access.getIndex(method)][0].getName())) {
-                    result = access.invoke(obj, method, "");
+                    result = invokeSetter(obj, method, "");
                 }
             }
             else {
-                Class<?>[] types = new Class<?>[1];
-                types[0] = value.getClass();
-                result = access.invoke(obj, method, types, value);
+                result = invokeSetter(obj, method, value);
             }
         }
 
@@ -127,14 +125,60 @@ public class ReflectionUtils {
         OutParameter<String> out = new OutParameter<String>();
         out.setData( method );
         if(hasMethod(out, access)) {
-
-            result = access.invoke(obj, out.getData());
+            method = out.getData();
+            result = invokeGetter(obj, method);
             if(result == null && access.getIndex(method)>-1 && access.getReturnTypes()[access.getIndex(method)].equals(UUID.class)) {
                 result = UUID.randomUUID();
             }
         }
 
         return result;
+    }
+
+    private static Object invokeGetter(Object obj, String method) {
+        if(obj == null || StringUtils.isEmpty(method)) {
+            return null;
+        }
+
+        if(obj.getClass().getClassLoader() instanceof MemoryClassLoader) {
+            try {
+                return obj.getClass().getMethod(method, String.class).invoke(obj);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
+        }
+
+        MethodAccess access = getMethodAccess(obj.getClass());
+        return access.invoke(obj, method);
+    }
+
+    private static Object invokeSetter(Object obj, String method, Object ...args) {
+        if(obj == null || StringUtils.isEmpty(method) || args==null || args.length==0) {
+            return null;
+        }
+
+        if(obj.getClass().getClassLoader() instanceof MemoryClassLoader) {
+            try {
+                return obj.getClass().getMethod(method, String.class).invoke(obj, args);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            }
+        }
+
+        MethodAccess access = getMethodAccess(obj.getClass());
+        Class<?>[] types = new Class<?>[args.length];
+        for (int i = 0; i < args.length; i++) {
+            types[i] = args[i].getClass();
+        }
+        return access.invoke(obj, method, types, args);
     }
 
     private static Boolean hasMethod(OutParameter<String> out, MethodAccess access) {
