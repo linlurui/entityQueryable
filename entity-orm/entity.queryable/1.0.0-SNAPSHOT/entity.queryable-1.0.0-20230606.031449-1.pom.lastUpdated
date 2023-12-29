@@ -1,7 +1,0 @@
-#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Sat Jun 10 00:08:42 CST 2023
-https\://gitee.com/ccait/ccweb/raw/release/.error=
-https\://maven.aliyun.com/repository/central/.error=
-https\://maven.aliyun.com/repository/central/.lastUpdated=1686326921462
-https\://gitee.com/ccait/ccweb/raw/release/.lastUpdated=1686326921645
-https\://gitee.com/ccait/entityqueryable/raw/1.0/.lastUpdated=1686326922147
