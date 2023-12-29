@@ -10,7 +10,7 @@ import java.util.Map;
  *
  * @author michael
  */
-class MemoryClassLoader extends URLClassLoader {
+public class MemoryClassLoader extends URLClassLoader {
 
     // class name to class bytes:
     Map<String, byte[]> classBytes = new HashMap<String, byte[]>();
