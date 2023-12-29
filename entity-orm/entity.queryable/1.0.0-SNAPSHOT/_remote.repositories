@@ -1,0 +1,12 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Fri Dec 29 23:19:14 CST 2023
+entity.queryable-1.0.0-20230306.011314-1.jar>entity-orm=
+entity.queryable-1.0.0-20230422.034330-2.pom>entity-orm=
+entity.queryable-1.0.0-20230606.031449-1.jar>entity-orm=
+entity.queryable-1.0.0-20230619.025220-2.jar>entity-orm=
+entity.queryable-1.0.0-20230619.025220-2.pom>entity-orm=
+entity.queryable-1.0.0-20230606.031449-1.pom>entity-orm=
+entity.queryable-1.0.0-20230422.034330-2.jar>entity-orm=
+entity.queryable-1.0.0-20230306.011314-1.pom>entity-orm=
+entity.queryable-1.0.0-SNAPSHOT.pom>=
+entity.queryable-1.0.0-SNAPSHOT.jar>=
