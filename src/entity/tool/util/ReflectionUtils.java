@@ -142,7 +142,7 @@ public class ReflectionUtils {
 
         if(obj.getClass().getClassLoader() instanceof MemoryClassLoader) {
             try {
-                return obj.getClass().getMethod(method, String.class).invoke(obj);
+                return obj.getClass().getMethod(method).invoke(obj);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } catch (InvocationTargetException e) {
@@ -160,10 +160,13 @@ public class ReflectionUtils {
         if(obj == null || StringUtils.isEmpty(method) || args==null || args.length==0) {
             return null;
         }
-
+        Class<?>[] types = new Class<?>[args.length];
+        for (int i = 0; i < args.length; i++) {
+            types[i] = args[i].getClass();
+        }
         if(obj.getClass().getClassLoader() instanceof MemoryClassLoader) {
             try {
-                return obj.getClass().getMethod(method, String.class).invoke(obj, args);
+                return obj.getClass().getMethod(method, types).invoke(obj, args);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } catch (InvocationTargetException e) {
@@ -174,10 +177,7 @@ public class ReflectionUtils {
         }
 
         MethodAccess access = getMethodAccess(obj.getClass());
-        Class<?>[] types = new Class<?>[args.length];
-        for (int i = 0; i < args.length; i++) {
-            types[i] = args[i].getClass();
-        }
+
         return access.invoke(obj, method, types, args);
     }
 

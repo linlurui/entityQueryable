@@ -270,6 +270,7 @@ public final class Where<T> extends QueryableAction<T> {
 				sql = null;
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
+				throw new SQLException(e.getMessage(),e.getCause());
 			}
 			return row[0] !=null && row[0].intValue()>0;
 		}
