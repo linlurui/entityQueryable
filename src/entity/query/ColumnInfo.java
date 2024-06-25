@@ -103,9 +103,32 @@ public class ColumnInfo implements Serializable {
 		isAutoIncrement = autoIncrement;
 	}
 
+	@Exclude
+	private Boolean foreignKey;
+
+	public Boolean getForeignKey() {
+		return foreignKey;
+	}
+
+	public void setForeignKey(Boolean foreignKey) {
+		this.foreignKey = foreignKey;
+	}
+
+	@Exclude
+	private ForeignKeyInfo foreignKeyInfo;
+
+	public ForeignKeyInfo getForeignKeyInfo() {
+		return foreignKeyInfo;
+	}
+
+	public void setForeignKeyInfo(ForeignKeyInfo foreignKeyInfo) {
+		this.foreignKeyInfo = foreignKeyInfo;
+	}
+
+
 	private Boolean isPrimaryKey;
 
-    public Boolean isPrimaryKey() {
+	public Boolean isPrimaryKey() {
 
         return getIsPrimaryKey();
     }
