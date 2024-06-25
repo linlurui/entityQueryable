@@ -1,5 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Tue Jun 25 23:33:30 CST 2024
+#Tue Jun 25 23:41:30 CST 2024
 entity.queryable-1.0.0-SNAPSHOT.jar>=
 entity.queryable-1.0.0-SNAPSHOT.pom>entity-orm=
 entity.queryable-1.0.0-SNAPSHOT.pom>=
