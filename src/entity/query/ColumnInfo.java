@@ -15,6 +15,7 @@ import entity.query.annotation.Exclude;
 import entity.query.annotation.Fieldname;
 import entity.query.enums.AlterMode;
 import java.io.Serializable;
+import java.util.List;
 
 
 public class ColumnInfo implements Serializable {
@@ -104,14 +105,14 @@ public class ColumnInfo implements Serializable {
 	}
 
 	@Exclude
-	private Enum valueEnum;
+	private List<OptionInfo> options;
 
-	public Enum getValueEnum() {
-		return valueEnum;
+	public List<OptionInfo> getOptions() {
+		return options;
 	}
 
-	public void setValueEnum(Enum valueEnum) {
-		this.valueEnum = valueEnum;
+	public void setOptions(List<OptionInfo> options) {
+		this.options = options;
 	}
 
 	@Exclude
