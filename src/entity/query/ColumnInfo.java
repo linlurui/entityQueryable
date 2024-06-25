@@ -104,14 +104,14 @@ public class ColumnInfo implements Serializable {
 	}
 
 	@Exclude
-	private Boolean foreignKey;
+	private Enum valueEnum;
 
-	public Boolean getForeignKey() {
-		return foreignKey;
+	public Enum getValueEnum() {
+		return valueEnum;
 	}
 
-	public void setForeignKey(Boolean foreignKey) {
-		this.foreignKey = foreignKey;
+	public void setValueEnum(Enum valueEnum) {
+		this.valueEnum = valueEnum;
 	}
 
 	@Exclude
