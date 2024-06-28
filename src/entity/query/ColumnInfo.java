@@ -104,6 +104,14 @@ public class ColumnInfo implements Serializable {
 		isAutoIncrement = autoIncrement;
 	}
 
+	public List<OptionInfo> getOptionInfos() {
+		return optionInfos;
+	}
+
+	public void setOptionInfos(List<OptionInfo> optionInfos) {
+		this.optionInfos = optionInfos;
+	}
+
 	@Exclude
 	private List<OptionInfo> optionInfos;
 
