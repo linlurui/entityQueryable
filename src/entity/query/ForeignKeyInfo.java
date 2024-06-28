@@ -4,6 +4,16 @@ public class ForeignKeyInfo {
     private String table;
     private String primaryKey;
 
+    public String getFilter() {
+        return filter;
+    }
+
+    public void setFilter(String filter) {
+        this.filter = filter;
+    }
+
+    private String filter;
+
     public String getTable() {
         return table;
     }
