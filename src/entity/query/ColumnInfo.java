@@ -105,15 +105,7 @@ public class ColumnInfo implements Serializable {
 	}
 
 	@Exclude
-	private List<OptionInfo> options;
-
-	public List<OptionInfo> getOptions() {
-		return options;
-	}
-
-	public void setOptions(List<OptionInfo> options) {
-		this.options = options;
-	}
+	private List<OptionInfo> optionInfos;
 
 	@Exclude
 	private ForeignKeyInfo foreignKeyInfo;
