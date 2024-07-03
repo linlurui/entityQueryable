@@ -107,16 +107,25 @@ public abstract class QueryableBase<T> implements IDataActuator {
 		return dataSource;
 	}
 
+	@ExcelIgnore
+	@JsonIgnore
+	@JSONField(serialize = false)
 	private Object entityObject;
 	public Object entityObject() {
 		return entityObject;
 	}
 
+	@ExcelIgnore
+	@JsonIgnore
+	@JSONField(serialize = false)
 	private ISqlParser parser;
 	protected ISqlParser getParser() {
 		return parser;
 	}
 
+	@ExcelIgnore
+	@JsonIgnore
+	@JSONField(serialize = false)
 	protected Class<T> genericType;
 	protected Class<T> getGenericType(){
 		return genericType;

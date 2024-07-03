@@ -61,6 +61,9 @@ public abstract class QueryableAction<T> implements IDataActuator
         }
     }
 
+    @ExcelIgnore
+    @JsonIgnore
+    @JSONField(serialize = false)
     private Object entityObject;
 
     public Object entityObject()
@@ -122,6 +125,9 @@ public abstract class QueryableAction<T> implements IDataActuator
         return dataSource;
     }
 
+    @ExcelIgnore
+    @JsonIgnore
+    @JSONField(serialize = false)
     private ISqlParser parser;
 
     protected ISqlParser getParser()
@@ -129,6 +135,9 @@ public abstract class QueryableAction<T> implements IDataActuator
         return parser;
     }
 
+    @ExcelIgnore
+    @JsonIgnore
+    @JSONField(serialize = false)
     protected Class<T> genericType;
 
     protected Class<T> getGenericType()

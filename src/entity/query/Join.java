@@ -12,6 +12,7 @@
 package entity.query;
 
 
+import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import entity.query.core.*;
@@ -73,17 +74,25 @@ public final class Join<T> implements IDataActuator {
             }
         }
 	}
-
+	@ExcelIgnore
+	@JsonIgnore
+	@JSONField(serialize = false)
 	private Object entityObject;
 	public Object entityObject() {
 		return entityObject;
 	}
 
+	@ExcelIgnore
+	@JsonIgnore
+	@JSONField(serialize = false)
 	private ISqlParser parser;
 	public ISqlParser getParser() {
 		return parser;
 	}
 
+	@ExcelIgnore
+	@JsonIgnore
+	@JSONField(serialize = false)
 	protected Class<T> genericType;
 	public Class<T> getGenericType(){
 		return genericType;
