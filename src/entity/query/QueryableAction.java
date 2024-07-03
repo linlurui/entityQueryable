@@ -12,6 +12,7 @@
 package entity.query;
 
 
+import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import entity.query.core.*;
@@ -79,6 +80,7 @@ public abstract class QueryableAction<T> implements IDataActuator
     	return this;
     }
 
+    @ExcelIgnore
     @JsonIgnore
     @JSONField(serialize = false)
     private DBTransaction transaction;
@@ -90,6 +92,7 @@ public abstract class QueryableAction<T> implements IDataActuator
         this.transaction = conn;
     }
 
+    @ExcelIgnore
     @JsonIgnore
     @JSONField(serialize = false)
     private Connection connection;
@@ -101,6 +104,7 @@ public abstract class QueryableAction<T> implements IDataActuator
         this.connection = conn;
     }
 
+    @ExcelIgnore
     @JsonIgnore
     @JSONField(serialize = false)
     protected DataSource dataSource;
