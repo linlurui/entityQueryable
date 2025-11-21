@@ -2,23 +2,23 @@
 <metadata modelVersion="1.1.0">
   <groupId>entity-orm</groupId>
   <artifactId>entity.queryable</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
   <versioning>
+    <lastUpdated>20251121153215</lastUpdated>
     <snapshot>
       <localCopy>true</localCopy>
     </snapshot>
-    <lastUpdated>20240703135828</lastUpdated>
     <snapshotVersions>
-      <snapshotVersion>
-        <extension>jar</extension>
-        <value>1.0.0-SNAPSHOT</value>
-        <updated>20240703135828</updated>
-      </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
         <value>1.0.0-SNAPSHOT</value>
-        <updated>20240703135828</updated>
+        <updated>20251121153215</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>1.0.0-SNAPSHOT</value>
+        <updated>20251121153215</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
+  <version>1.0.0-SNAPSHOT</version>
 </metadata>
