@@ -12,6 +12,7 @@ package entity.tool.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,8 +40,14 @@ public class JsonUtils
     public static <T> T parse( String jsonString, Class<T> pojoClass ) throws JsonParseException, JsonMappingException, IOException
     {
         T pojo = null;
+        if(StringUtils.isEmpty(jsonString)) {
+            return null;
+        }
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         //mapper.setDateFormat(new ObjectMapperDateFormatExtend(mapper.getDateFormat()));
+        if(jsonString.startsWith("\"") && jsonString.endsWith("\"")) {
+            jsonString = jsonString.substring(1, jsonString.length() - 1).replace("\\\"", "\"");
+        }
         pojo = mapper.readValue( jsonString, pojoClass );
 
         return pojo;
@@ -55,7 +62,10 @@ public class JsonUtils
     @SuppressWarnings({ "rawtypes", "unchecked" })
 	public static <T> List<T> toList( String json, Class<T> cls ) throws JsonParseException, JsonMappingException, IOException
     {
-        ArrayList<T> mList = new ArrayList<T>();
+        List mList = new ArrayList();
+        if(json.startsWith("\"") && json.endsWith("\"")) {
+            json = json.substring(1, json.length() - 1).replace("\\\"", "\"");
+        }
         List array = mapper.readValue( json, List.class );
         for ( int i = 0; i < array.size(); i++ )
         {
@@ -63,9 +73,15 @@ public class JsonUtils
         		mList.add( (T)array.get( i ) );
         	}
 
-        	else {
+        	else if(array.get(i) instanceof String) {
         		mList.add(JsonUtils.convert(array.get(i), cls));
         	}
+            else if(array.get(i) instanceof Serializable) {
+                mList.add(JsonUtils.convert(JsonUtils.toJson(array.get(i)), cls));
+            }
+            else {
+                mList.add(array.get(i));
+            }
         }
 
         return mList;

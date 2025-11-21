@@ -32,6 +32,10 @@ import java.util.regex.Pattern;
 public abstract class SqlParserBase implements ISqlParser {
 
 	private static final Logger log = LoggerFactory.getLogger(SqlParserBase.class);
+	
+	// 缓存正则表达式 Pattern，避免重复编译
+	private static final Pattern ARGS_PATTERN = Pattern.compile(RegexUtils.Args);
+	private static final Pattern QUOTE_PATTERN = Pattern.compile("'([^']*)'");
 
 	protected SqlContainer container;
 
@@ -91,12 +95,13 @@ public abstract class SqlParserBase implements ISqlParser {
 			return;
 		}
 
+		String filteredExp = filter(exp);
 		if(condition == Condition.AND) {
-			container.Where.append(String.format(" AND %s ", filter(exp)));
+			container.Where.append(" AND ").append(filteredExp).append(" ");
 		}
 
 		else if(condition == Condition.OR) {
-			container.Where.append(String.format(" OR %s ", filter(exp)));
+			container.Where.append(" OR ").append(filteredExp).append(" ");
 		}
 	}
 
@@ -187,11 +192,22 @@ public abstract class SqlParserBase implements ISqlParser {
 	@Override
 	public void addFrom(String exp, String alias) {
 
-		if(StringUtils.isEmpty(exp) || StringUtils.isEmpty(alias)) {
+		if(StringUtils.isEmpty(exp)) {
 			return;
 		}
 
-		container.From.append(String.format(" %s AS %s ", filter(exp.substring(0, exp.length() - 1)), alias.replaceAll( "['\"]", "" )));
+		String normalized = exp.trim();
+		if(normalized.endsWith(";")) {
+			normalized = normalized.substring(0, normalized.length() - 1);
+		}
+
+		String filtered = filter(normalized);
+		if(StringUtils.isEmpty(alias)) {
+			container.From.append(String.format(" %s ", filtered));
+			return;
+		}
+
+		container.From.append(String.format(" %s AS %s ", filtered, alias.replaceAll( "['\"]", "" )));
 	}
 
 	@Override
@@ -215,23 +231,33 @@ public abstract class SqlParserBase implements ISqlParser {
 		container.On.add(filter(exp));
 	}
 
+	private static final class SqlArguments {
+		private final List<String> formattedArgs = new ArrayList<String>();
+		private final List<Object> rawArgs = new ArrayList<Object>();
+	}
+
 	@Override
 	public <T> Object[] getArgs(Class<T> clazz, String sql, Object obj, Map<Integer, Blob> blobMap) {
-
 		if(clazz == null) {
 			return null;
 		}
+		SqlArguments arguments = collectSqlArguments(clazz, sql, obj, blobMap);
+		return arguments.formattedArgs.toArray();
+	}
 
-	    Pattern p = Pattern.compile(RegexUtils.Args);
-	    Pattern p2 = Pattern.compile("'([^']*)'");
-	    Matcher m = p.matcher(sql);
-	    List<String> result = new ArrayList<String>();
-		Field[] flds = clazz.getDeclaredFields();
+	private <T> SqlArguments collectSqlArguments(Class<T> clazz, String sql, Object obj, Map<Integer, Blob> blobMap) {
+		SqlArguments arguments = new SqlArguments();
+		if(clazz == null || StringUtils.isEmpty(sql)) {
+			return arguments;
+		}
+		String normalizedSql = sql.replace("\n", "").toUpperCase();
+	    Matcher m = ARGS_PATTERN.matcher(sql);
+		Field[] flds = entity.tool.util.FieldCache.getCachedDeclaredFields(clazz);
 		int i = 0;
 	    while (m.find()) {
 	    	String fieldName = m.group(1);
 	    	Object value = ReflectionUtils.getFieldValue(clazz, obj, fieldName);
-			if(value==null && sql.replace("\n", "").toUpperCase().startsWith("INSERT INTO")) {
+			if(value==null && normalizedSql.startsWith("INSERT INTO")) {
 				boolean isPresent = false;
 				Field field = null;
 				for(Field a : flds) {
@@ -251,18 +277,20 @@ public abstract class SqlParserBase implements ISqlParser {
 			if(value instanceof Blob) {
 				if(blobMap != null) {
 					blobMap.put(i, (Blob) value);
-					result.add(strValue);
-					i++;
 				}
+				arguments.formattedArgs.add(strValue);
+				arguments.rawArgs.add(value);
+				i++;
 				continue;
 			}
 
-			strValue = ensureValue(p2, m, fieldName, value);
+			strValue = ensureValue(QUOTE_PATTERN, m, fieldName, value);
 
-			result.add(strValue);
+			arguments.formattedArgs.add(strValue);
+			arguments.rawArgs.add(resolveParameterValue(m.group(), fieldName, value, strValue));
+			i++;
 	    }
-
-	    return result.toArray();
+		return arguments;
 	}
 
 	private String ensureValue(Pattern pattern, Matcher matcher, String fieldName, Object value) {
@@ -285,6 +313,33 @@ public abstract class SqlParserBase implements ISqlParser {
 			}
 		}
 		return strValue;
+	}
+
+	private Object resolveParameterValue(String token, String fieldName, Object value, String formattedValue) {
+		if(value == null) {
+			return null;
+		}
+
+		if(value instanceof Blob) {
+			return value;
+		}
+
+		String literal = formattedValue;
+		if(StringUtils.isEmpty(literal)) {
+			return literal;
+		}
+
+		if(literal.startsWith("'") && literal.endsWith("'") && literal.length() > 1) {
+			literal = literal.substring(1, literal.length() - 1);
+		}
+		literal = literal.replace("''", "'");
+
+		String placeholder = String.format("#{%s}", fieldName);
+		String normalizedToken = token.replace("'", "");
+		if(normalizedToken.equals(placeholder)) {
+			return literal;
+		}
+		return normalizedToken.replace(placeholder, literal);
 	}
 
 	@Override
@@ -364,9 +419,9 @@ public abstract class SqlParserBase implements ISqlParser {
 		String tablename = getTablename(param);
 		clazz = param.getData();
 
-		String names = "";
-		String values = "";
-		Field[] flds = clazz.getDeclaredFields();
+		StringBuilder namesBuilder = new StringBuilder();
+		StringBuilder valuesBuilder = new StringBuilder();
+		Field[] flds = entity.tool.util.FieldCache.getCachedDeclaredFields(clazz);
 		for(Field fld : flds) {
 			AutoIncrement ai = fld.getAnnotation(AutoIncrement.class);
 			if(ai != null) {
@@ -382,37 +437,47 @@ public abstract class SqlParserBase implements ISqlParser {
 				continue;
 			}
 
-			Fieldname name = fld.getAnnotation(Fieldname.class);
-			if(name != null) {
-				names += String.format( ", %s%s%s", getPrefix(), ApplicationConfig.getInstance().get(name.value()), getSuffix());
-				values += "," + String.format("#{%s}", fld.getName());
+			if(namesBuilder.length() > 0) {
+				namesBuilder.append(", ");
+				valuesBuilder.append(", ");
 			}
 
-			else {
-				names += String.format(", %s%s%s", getPrefix(), fld.getName(), getSuffix());
-				values += "," + String.format("#{%s}", fld.getName());
+			Fieldname name = fld.getAnnotation(Fieldname.class);
+			if(name != null) {
+				namesBuilder.append(getPrefix())
+				            .append(ApplicationConfig.getInstance().get(name.value()))
+				            .append(getSuffix());
+			} else {
+				namesBuilder.append(getPrefix()).append(fld.getName()).append(getSuffix());
 			}
+			valuesBuilder.append("#{").append(fld.getName()).append("}");
 		}
-		if(StringUtils.isEmpty(names)) {
+		
+		if(namesBuilder.length() == 0) {
 			return "";
 		}
 
-		names = names.substring(1);
-		values = values.substring(1);
+		String names = namesBuilder.toString();
+		String values = valuesBuilder.toString();
 
-		return String.format("\nINSERT INTO %s (%s) VALUES (%s)\n", tablename, names, values);
+		StringBuilder sqlBuilder = new StringBuilder("\nINSERT INTO ");
+		sqlBuilder.append(tablename).append(" (").append(names)
+		          .append(") VALUES (").append(values).append(")\n");
+		return sqlBuilder.toString();
 	}
 
 	@Override
 	public <T> String getDeleteSql(Class<T> clazz) {
 
-		String where = container.Where.length() > 0 ? String.format("WHERE %s", container.Where.toString()) : "";
+		String where = container.Where.length() > 0 ? "WHERE " + container.Where.toString() : "";
 		OutParameter<Class<T>> param = new OutParameter<Class<T>>();
 		param.setData(clazz);
 		String tablename = getTablename(param);
 		clazz = param.getData();
 
-		return String.format("\nDELETE FROM %s %s\n", tablename, where);
+		StringBuilder sqlBuilder = new StringBuilder("\nDELETE FROM ");
+		sqlBuilder.append(tablename).append(" ").append(where).append("\n");
+		return sqlBuilder.toString();
 	}
 
 	@Override
@@ -422,8 +487,8 @@ public abstract class SqlParserBase implements ISqlParser {
 		String tablename = getTablename(param);
 		clazz = param.getData();
 
-		String settor = "";
-		Field[] flds = clazz.getDeclaredFields();
+		StringBuilder settorBuilder = new StringBuilder();
+		Field[] flds = entity.tool.util.FieldCache.getCachedDeclaredFields(clazz);
 		for(Field fld : flds) {
 			AutoIncrement ai = fld.getAnnotation(AutoIncrement.class);
 			if(ai != null) {
@@ -434,22 +499,32 @@ public abstract class SqlParserBase implements ISqlParser {
 				continue;
 			}
 
-			Fieldname name = fld.getAnnotation(Fieldname.class);
-			if(name != null) {
-				settor += String.format(",%s%s%s=#{%s}", getPrefix(), ApplicationConfig.getInstance().get(name.value()), getSuffix(), fld.getName());
+			if(settorBuilder.length() > 0) {
+				settorBuilder.append(",");
 			}
 
-			else {
-				settor += String.format(",%s%s%s=#{%s}", getPrefix(), fld.getName(), getSuffix(), fld.getName());
+			Fieldname name = fld.getAnnotation(Fieldname.class);
+			if(name != null) {
+				settorBuilder.append(getPrefix())
+				             .append(ApplicationConfig.getInstance().get(name.value()))
+				             .append(getSuffix())
+				             .append("=#{").append(fld.getName()).append("}");
+			} else {
+				settorBuilder.append(getPrefix())
+				             .append(fld.getName())
+				             .append(getSuffix())
+				             .append("=#{").append(fld.getName()).append("}");
 			}
 		}
-		if(StringUtils.isEmpty(settor)) {
+		if(settorBuilder.length() == 0) {
 			return "";
 		}
 
-		settor = settor.substring(1);
+		String settor = settorBuilder.toString();
 
-		return String.format("\nUPDATE %s SET %s\n", tablename, settor);
+		StringBuilder sqlBuilder = new StringBuilder("\nUPDATE ");
+		sqlBuilder.append(tablename).append(" SET ").append(settor).append("\n");
+		return sqlBuilder.toString();
 	}
 
 	@Override
@@ -459,9 +534,11 @@ public abstract class SqlParserBase implements ISqlParser {
 		String tablename = getTablename(param);
 		clazz = param.getData();
 
-		String where = container.Where.length()>0 ? String.format("WHERE %s", container.Where.toString()) : "";
-
-		return String.format("\nUPDATE %s SET %s %s \n", tablename, filter(exp), where);
+		String where = container.Where.length()>0 ? "WHERE " + container.Where.toString() : "";
+		StringBuilder sqlBuilder = new StringBuilder("\nUPDATE ");
+		sqlBuilder.append(tablename).append(" SET ").append(filter(exp))
+		          .append(" ").append(where).append(" \n");
+		return sqlBuilder.toString();
 	}
 
 	@Override
@@ -478,8 +555,8 @@ public abstract class SqlParserBase implements ISqlParser {
 		String tablename = getTablename(param);
 		clazz = param.getData();
 
-		String names = "";
-		Field[] flds = clazz.getDeclaredFields();
+		StringBuilder namesBuilder = new StringBuilder();
+		Field[] flds = entity.tool.util.FieldCache.getCachedDeclaredFields(clazz);
 		for(Field fld : flds) {
 			AutoIncrement ai = fld.getAnnotation(AutoIncrement.class);
 			if(ai != null) {
@@ -490,22 +567,29 @@ public abstract class SqlParserBase implements ISqlParser {
 				continue;
 			}
 
+			if(namesBuilder.length() > 0) {
+				namesBuilder.append(", ");
+			}
+
 			Fieldname name = fld.getAnnotation(Fieldname.class);
             if(name != null) {
-                names += String.format( ", %s%s%s", getPrefix(), ApplicationConfig.getInstance().get(name.value()), getSuffix());
-            }
-
-            else {
-                names += String.format( ", %s%s%s", getPrefix(), fld.getName(), getSuffix());
+                namesBuilder.append(getPrefix())
+                           .append(ApplicationConfig.getInstance().get(name.value()))
+                           .append(getSuffix());
+            } else {
+                namesBuilder.append(getPrefix())
+                           .append(fld.getName())
+                           .append(getSuffix());
             }
 		}
+		String names = namesBuilder.toString();
 		if(StringUtils.isEmpty(names)) {
 			return "";
 		}
 
-		names = names.substring(1);
-
-		return String.format("\nINSERT INTO %s (%s) %s\n", tablename, names, sql);
+		StringBuilder sqlBuilder = new StringBuilder("\nINSERT INTO ");
+		sqlBuilder.append(tablename).append(" (").append(names).append(") ").append(sql).append("\n");
+		return sqlBuilder.toString();
 	}
 
 	@Override
@@ -517,7 +601,7 @@ public abstract class SqlParserBase implements ISqlParser {
 
 	@Override
 	public <T> String getSelectSql(Class<T> clazz, int skip, int top, Boolean isCount) {
-		Field[] flds = clazz.getDeclaredFields();
+		Field[] flds = entity.tool.util.FieldCache.getCachedDeclaredFields(clazz);
 		String primaryKey = null;
 		for(Field fld : flds) {
 
@@ -647,49 +731,58 @@ public abstract class SqlParserBase implements ISqlParser {
 
 	@Override
 	public <T> String toString( Class<T> clazz, String exp, CommandMode cmdMode, Object obj, int skip, int top, Boolean isCount, Map<Integer, Blob> blobMap ) {
-		String sql = "";
-		switch(cmdMode) {
-		case Insert:
-			sql = getInsertSql(clazz);
-			break;
-		case Update:
-			sql = getUpdateSql(clazz);
-			break;
-		case InsertFrom:
-			sql = getInsertToSql(clazz);
-			break;
-		case UpdateFrom:
-			sql = getUpdateSql(clazz, exp);
-			break;
-		case Delete:
-		case DeleteFrom:
-			sql = getDeleteSql(clazz);
-			break;
-		case Exist:
-			sql = getSelectExistSql(clazz);
-			break;
-		case Tables:
-		    return getTablesSql();
-		case ColumnsInfo:
-		    return getColumnInfoListSql(exp);
-		case PrimaryKey:
-			return  getPrimaryKeySpl(exp);
-		case GetViewSql:
-			return getViewDefinedSql(clazz);
-		default:
-			sql = getSelectSql(clazz, skip, top, isCount);
-			break;
-		}
-
+		String sql = buildSql(clazz, exp, cmdMode, obj, skip, top, isCount);
 		Object[] args = getArgs(clazz, sql, obj, blobMap);
+		return DBUtils.getSql(sql, args);
+	}
 
-		sql = DBUtils.getSql(sql, args);
+	@Override
+	public <T> PreparedSql getPreparedSql(Class<T> clazz, String exp, CommandMode cmdMode, Object obj,
+										  int skip, int top, Boolean isCount, Map<Integer, Blob> blobMap) {
+		String sql = buildSql(clazz, exp, cmdMode, obj, skip, top, isCount);
+		SqlArguments arguments = collectSqlArguments(clazz, sql, obj, blobMap);
+		String parameterized = StringUtils.isEmpty(sql) ? sql : sql.replaceAll(RegexUtils.ArgsReplacement, "?");
+		return new PreparedSql(parameterized, arguments.rawArgs);
+	}
 
-		return sql;
+	private <T> String buildSql(Class<T> clazz, String exp, CommandMode cmdMode, Object obj, int skip, int top, Boolean isCount) {
+		switch(cmdMode) {
+			case Insert:
+				return getInsertSql(clazz);
+			case Update:
+				return getUpdateSql(clazz);
+			case InsertFrom:
+				return getInsertToSql(clazz);
+			case UpdateFrom:
+				return getUpdateSql(clazz, exp);
+			case Delete:
+			case DeleteFrom:
+				return getDeleteSql(clazz);
+			case Exist:
+				return getSelectExistSql(clazz);
+			case Tables:
+				return getTablesSql();
+			case ColumnsInfo:
+				return getColumnInfoListSql(exp);
+			case PrimaryKey:
+				return getPrimaryKeySpl(exp);
+			case GetViewSql:
+				return getViewDefinedSql(clazz);
+			default:
+				return getSelectSql(clazz, skip, top, isCount);
+		}
 	}
 
 	public SqlContainer getContainer() {
 		return container;
+	}
+
+	protected void setContainer(SqlContainer container) {
+		if(container == null) {
+			this.container = new SqlContainer();
+			return;
+		}
+		this.container = container;
 	}
 
 	public String getPrefix() {

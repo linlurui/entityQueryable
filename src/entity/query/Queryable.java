@@ -17,8 +17,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import entity.query.annotation.Fieldname;
 import entity.query.annotation.PrimaryKey;
 import entity.query.core.*;
+import entity.query.core.cache.QueryCacheManager;
 import entity.query.core.executor.DBExecutorAdapter;
+import entity.query.core.lifecycle.EntityLifecycleContext;
+import entity.query.core.lifecycle.EntityLifecycleEventType;
+import entity.query.core.lifecycle.EntityLifecycleManager;
 import entity.query.enums.CommandMode;
+import entity.query.enums.DBType;
 import entity.tool.util.*;
 import io.reactivex.Flowable;
 import org.slf4j.Logger;
@@ -29,6 +34,7 @@ import java.lang.reflect.Field;
 import java.sql.Blob;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static entity.tool.util.DBUtils.*;
 import static entity.tool.util.StringUtils.isEmpty;
@@ -41,26 +47,66 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 	@SuppressWarnings("unchecked")
 	public Queryable() {
 		super();
-		init((Class<T>)this.getClass(), this, null);
+		init(getTypeClass(), this, null);
+	}
+
+	private Class getTypeClass() {
+		Pattern regex = Pattern.compile("\\$\\d+$");
+		if(regex.matcher(this.getClass().getName()).find()) {
+			return this.getClass().getSuperclass();
+		}
+		return this.getClass();
 	}
 
 	public Queryable(DBTransaction transaction) {
 		super(transaction);
-		init((Class<T>)this.getClass(), this, null);
+		init(getTypeClass(), this, null);
+	}
+
+	/**
+	 * 静态链式查询入口，自动根据实体继承规则推导表名。
+	 * 等价于：new User().from(user.tablename())
+	 */
+	public static <T extends Queryable<T>> From<T> from(Class<T> clazz) {
+		if(clazz == null) {
+			throw new IllegalArgumentException("Class can not be null");
+		}
+
+		T entity = ReflectionUtils.getInstance(clazz);
+		String tableName = entity.tablename();
+		return entity.from(tableName);
+	}
+
+	public static <T extends Queryable<T>> From<T> from(Class<T> clazz, String tableName) {
+		return from(clazz, tableName, null);
+	}
+
+	public static <T extends Queryable<T>> From<T> from(Class<T> clazz, String tableName, String alias) {
+		if(clazz == null) {
+			throw new IllegalArgumentException("Class can not be null");
+		}
+		T entity = ReflectionUtils.getInstance(clazz);
+		return entity.from(tableName, alias);
 	}
 
 	public From<T> from(QueryableAction<T> queryable, String alias) {
 		From<T> clause = new From<T>();
 		clause.init(this.genericType, this.entityObject(), this);
-		clause.getParser().addFrom(String.format( "( %s )", queryable.toString(CommandMode.Select) ), alias);
+		StringBuilder sb = new StringBuilder("( ");
+		sb.append(queryable.toString(CommandMode.Select)).append(" )");
+		clause.getParser().addFrom(sb.toString(), alias);
 
 		return clause;
 	}
 
 	public <E> From<T> from(String tableName) {
+		return from(tableName, null);
+	}
+
+	public <E> From<T> from(String tableName, String alias) {
 	    From<T> clause = new From<T>();
 	    clause.init(this.genericType, this.entityObject(), this);
-	    clause.getParser().addFrom(tableName, "");
+	    clause.getParser().addFrom(tableName, alias);
 
 	    return clause;
 	}
@@ -98,81 +144,107 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 		return sql;
 	}
 
-	public Integer insert() throws SQLException {
-		final Integer[] id = {0};
-		final Queryable queryable = this;
-		final Class<T> clazz = this.genericType;
-		final Object obj = this.entityObject();
-		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
-			try {
-				Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-				String sql = getParser().toString(clazz, "", CommandMode.Insert, obj, 0, 0, false, blobMap);
-				id[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, blobMap);
-			} catch (Exception e) {
-				log.error(e.getMessage(), e);
-			}
-			return (id==null || id[0]==null) ? 0 : id[0];
+	public PreparedSql toPreparedSql() {
+		return toPreparedSql(CommandMode.Select);
+	}
+
+	public PreparedSql toPreparedSql(CommandMode commandMode) {
+		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+		return getParser().getPreparedSql(this.genericType, "", commandMode, this.entityObject(), 0, 0, false, blobMap);
+	}
+
+	public String toString(CommandMode commandMode, DBType dbType) {
+		if(dbType == null) {
+			return toString(commandMode);
 		}
-		ThreadUtils.onec(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-					String sql = getParser().toString(clazz, "", CommandMode.Insert, obj, 0, 0, false, blobMap);
-					id[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, blobMap);
-				} catch (Exception e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		});
-		return (id==null || id[0]==null) ? 0 : id[0];
+		if(!(getParser() instanceof SqlParserBase)) {
+			throw new IllegalStateException("Current parser does not support DBType overrides.");
+		}
+		try {
+			SqlContainer clone = cloneContainer(((SqlParserBase) getParser()).getContainer());
+			ISqlParser overrideParser = SqlParserFactory.createParser(dbType, clone);
+			Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+			return overrideParser.toString(this.genericType, "", commandMode, this.entityObject(), 0, 0, false, blobMap);
+		} catch (Exception e) {
+			log.error("Failed to create parser for {}: {}", dbType, e.getMessage(), e);
+			throw new IllegalStateException(String.format("Unsupported DBType %s", dbType), e);
+		}
+	}
+
+	private SqlContainer cloneContainer(SqlContainer source) {
+		if(source == null) {
+			return new SqlContainer();
+		}
+		SqlContainer target = new SqlContainer();
+		target.Where.append(source.Where.toString());
+		target.OrderBy.append(source.OrderBy.toString());
+		target.GroupBy.append(source.GroupBy.toString());
+		target.Select.append(source.Select.toString());
+		target.Union.append(source.Union.toString());
+		target.From.append(source.From.toString());
+		target.Join.addAll(source.Join);
+		target.On.addAll(source.On);
+		return target;
+	}
+
+	public Integer insert() throws SQLException {
+		try {
+			Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+			String sql = getParser().toString(this.genericType, "", CommandMode.Insert, this.entityObject(), 0, 0, false, blobMap);
+            EntityLifecycleContext context = buildLifecycleContext(CommandMode.Insert, sql);
+            EntityLifecycleManager.fire(EntityLifecycleEventType.PRE_PERSIST, this, context);
+			Integer id = DBExecutorAdapter.createExecutor(this).execute(sql, blobMap);
+            if(id != null && id > 0) {
+                QueryCacheManager.clearAll();
+                EntityLifecycleManager.fire(EntityLifecycleEventType.POST_PERSIST, this, context);
+            }
+            return (id == null) ? 0 : id;
+		} catch (Exception e) {
+			log.error("Insert failed: " + e.getMessage(), e);
+			throw new SQLException("Insert operation failed", e);
+		}
 	}
 
 	public boolean delete() throws SQLException {
-		final Integer[] row = {0};
-		final Queryable queryable = this;
-		final Class<T> clazz = this.genericType;
-		final Object obj = this.entityObject();
-		ThreadUtils.onec(new Runnable(){
-			@Override
-			public void run() {
-				try {
-					String sql = getParser().toString(clazz, "", CommandMode.Delete, obj, 0, 0, false, null);
-					row[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, null);
-				} catch (Exception e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		});
-
-		return row[0] !=null && row[0].intValue()>0;
+		try {
+			String sql = getParser().toString(this.genericType, "", CommandMode.Delete, this.entityObject(), 0, 0, false, null);
+            EntityLifecycleContext context = buildLifecycleContext(CommandMode.Delete, sql);
+            EntityLifecycleManager.fire(EntityLifecycleEventType.PRE_REMOVE, this, context);
+			Integer row = DBExecutorAdapter.createExecutor(this).execute(sql, null);
+            boolean success = row != null && row.intValue() > 0;
+            if(success) {
+                QueryCacheManager.clearAll();
+                EntityLifecycleManager.fire(EntityLifecycleEventType.POST_REMOVE, this, context);
+            }
+            return success;
+		} catch (Exception e) {
+			log.error("Delete failed: " + e.getMessage(), e);
+			throw new SQLException("Delete operation failed", e);
+		}
 	}
 
 	public boolean update() throws SQLException {
-		final Integer[] row = {0};
-		final Queryable queryable = this;
-		final Class<T> clazz = this.genericType;
-		final Object obj = this.entityObject();
-
-		ThreadUtils.onec(new Runnable(){
-			@Override
-			public void run() {
-				try {
-					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-					String sql = getParser().toString(clazz, "", CommandMode.Update, obj, 0, 0, false, blobMap);
-					row[0] = DBExecutorAdapter.createExecutor(queryable).execute(sql, blobMap);
-				} catch (Exception e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		});
-
-		return row[0] !=null && row[0].intValue()>0;
+		try {
+			Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+			String sql = getParser().toString(this.genericType, "", CommandMode.Update, this.entityObject(), 0, 0, false, blobMap);
+            EntityLifecycleContext context = buildLifecycleContext(CommandMode.Update, sql);
+            EntityLifecycleManager.fire(EntityLifecycleEventType.PRE_UPDATE, this, context);
+			Integer row = DBExecutorAdapter.createExecutor(this).execute(sql, blobMap);
+            boolean success = row != null && row.intValue() > 0;
+            if(success) {
+                QueryCacheManager.clearAll();
+                EntityLifecycleManager.fire(EntityLifecycleEventType.POST_UPDATE, this, context);
+            }
+            return success;
+		} catch (Exception e) {
+			log.error("Update failed: " + e.getMessage(), e);
+			throw new SQLException("Update operation failed", e);
+		}
 	}
 
 	public boolean update(String... exp) throws SQLException, IllegalAccessException {
 
-		Field[] flds = this.getClass().getDeclaredFields();
+		Field[] flds = entity.tool.util.FieldCache.getCachedDeclaredFields(getTypeClass());
 		if(flds == null) {
 			throw new SQLException("Can not find fields!!!");
 		}
@@ -200,38 +272,33 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 			fieldname = fieldNameAnn.value();
 		}
 
-		final QueryableAction ac = this.where(String.format("%s=#{%s}", fieldname, primaryKey.getName()));
+		QueryableAction ac = this.where(String.format("%s=#{%s}", fieldname, primaryKey.getName()));
 
-		String expText = "";
+		StringBuilder expTextBuilder = new StringBuilder();
 		for (int i=0; i<exp.length; i++) {
 			if(i>0) {
-				expText = expText + ", ";
+				expTextBuilder.append(", ");
 			}
-			expText = expText + DBUtils.getSqlInjText( exp[i] );
+			expTextBuilder.append(DBUtils.getSqlInjText(exp[i]));
 		}
+		String expText = expTextBuilder.toString();
 
-		final Integer[] row = {0};
-		final Queryable queryable = this;
-		final Class<T> clazz = this.genericType;
-		final Object obj = this.entityObject();
-
-		final String finalExpText = expText;
-		ThreadUtils.onec(new Runnable(){
-			@Override
-			public void run() {
-				try {
-					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-					String sql = ac.getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
-					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
-					sql = null;
-				} catch (Exception e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		});
-		expText = null;
-
-		return row[0] !=null && row[0].intValue()>0;
+		try {
+			Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+			String sql = ac.getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
+            EntityLifecycleContext context = buildLifecycleContext(CommandMode.Update, sql);
+            EntityLifecycleManager.fire(EntityLifecycleEventType.PRE_UPDATE, this, context);
+			Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
+            boolean success = row != null && row.intValue() > 0;
+            if(success) {
+                QueryCacheManager.clearAll();
+                EntityLifecycleManager.fire(EntityLifecycleEventType.POST_UPDATE, this, context);
+            }
+            return success;
+		} catch (Exception e) {
+			log.error("Update failed: " + e.getMessage(), e);
+			throw new SQLException("Update operation failed", e);
+		}
 	}
 
 	public Flowable<Integer> asyncInsert() throws Exception {
@@ -293,15 +360,18 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
     }
 
 	public void batchInsert(List<T> list, Callback<List<T>> call) throws Exception {
-		batchTask(list, this.genericType, this, getParser(), CommandMode.Insert, null, call);
+        batchTask(list, this.genericType, this, getParser(), CommandMode.Insert, null, call);
+        QueryCacheManager.clearAll();
 	}
 
 	public void batchUpdate(List<T> list, Callback<List<T>> call, String... exp) throws Exception {
-		batchTask(list, this.genericType, this, getParser(), CommandMode.Update, exp, call);
+        batchTask(list, this.genericType, this, getParser(), CommandMode.Update, exp, call);
+        QueryCacheManager.clearAll();
 	}
 
 	public void batchDelete(List<T> list, Callback<List<T>> call) throws Exception {
-		batchTask(list, this.genericType, this, getParser(), CommandMode.Delete, null, call);
+        batchTask(list, this.genericType, this, getParser(), CommandMode.Delete, null, call);
+        QueryCacheManager.clearAll();
 	}
 
 	public static List<TableInfo> getTables(String dataSourceId) {
@@ -380,7 +450,9 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 		DataSource dataSource = DataSourceFactory.getInstance().getDataSource(dataSourceId);
 		String sql = SqlParserFactory.createParser(dataSource).getCreateTableSql(tablename, columns);
-		DBExecutorAdapter.createExecutor(dataSource).execute(sql);
+		if(StringUtils.isNotEmpty(sql)) {
+			DBExecutorAdapter.createExecutor(dataSource).execute(sql);
+		}
 
 	}
 
@@ -438,4 +510,9 @@ public abstract class Queryable<T> extends QueryableBase<T> implements Serializa
 
 		return result;
 	}
+
+    private EntityLifecycleContext buildLifecycleContext(CommandMode mode, String sql) {
+        long now = System.currentTimeMillis();
+        return EntityLifecycleContext.create(mode, dataSource(), sql, null, false, now, now);
+    }
 }

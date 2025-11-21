@@ -10,62 +10,36 @@
 
 package entity.tool.util;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import com.esotericsoftware.reflectasm.ConstructorAccess;
 import com.esotericsoftware.reflectasm.MethodAccess;
 import entity.query.Datetime;
 import entity.query.annotation.Fieldname;
 import entity.query.core.ApplicationConfig;
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 
 public class ReflectionUtils {
 
-    private volatile static HashMap<String, MethodAccess> methodMap = new HashMap<String, MethodAccess>();
-    private volatile static HashMap<String, ConstructorAccess<?>> objMap = new HashMap<String, ConstructorAccess<?>>();
+    private static final ConcurrentHashMap<String, MethodAccess> methodMap = new ConcurrentHashMap<String, MethodAccess>();
+    private static final ConcurrentHashMap<String, ConstructorAccess<?>> objMap = new ConcurrentHashMap<String, ConstructorAccess<?>>();
+
     public static <T> MethodAccess getMethodAccess(Class<T> clazz) {
-
-        if (!methodMap.containsKey(clazz.getName())) {
-            synchronized (methodMap) {
-                if (!methodMap.containsKey(clazz.getName())) {
-                    methodMap.put(clazz.getName(), MethodAccess.get(clazz));
-                }
-            }
-        }
-
-        MethodAccess result = methodMap.get(clazz.getName());
-
-        if(result == null) {
-            return MethodAccess.get(clazz);
-        }
-
-        return result;
+        return methodMap.computeIfAbsent(clazz.getName(), name -> MethodAccess.get(clazz));
     }
 
 
     @SuppressWarnings("unchecked")
     public static <T> ConstructorAccess<T> getConstructorAccess(Class<T> clazz){
-        if (!objMap.containsKey(clazz.getName())) {
-            synchronized (objMap) {
-                if (!objMap.containsKey(clazz.getName())) {
-                    objMap.put(clazz.getName(), ConstructorAccess.get(clazz));
-                }
-            }
-        }
-
-        ConstructorAccess<T> result = (ConstructorAccess<T>) objMap.get(clazz.getName());
-
-        if(result == null) {
-            return ConstructorAccess.get(clazz);
-        }
-
-        return result;
+        return (ConstructorAccess<T>) objMap.computeIfAbsent(clazz.getName(), name -> ConstructorAccess.get(clazz));
     }
 
     public static <T> T getInstance(Class<T> clazz) {
@@ -162,7 +136,29 @@ public class ReflectionUtils {
         }
         Class<?>[] types = new Class<?>[args.length];
         for (int i = 0; i < args.length; i++) {
-            types[i] = args[i].getClass();
+            if(Arrays.stream(args[i].getClass().getInterfaces()).anyMatch(intf -> intf.equals(List.class))) {
+                types[i] = List.class;
+            } else if(Arrays.stream(args[i].getClass().getInterfaces()).anyMatch(intf -> intf.equals(Map.class))) {
+                types[i] = Map.class;
+            } else {
+                if("String".equals(args[i].getClass().getSimpleName()) &&
+                        ((args[i].toString().startsWith("\"{") && args[i].toString().endsWith("}\""))||
+                                (args[i].toString().startsWith("{") && args[i].toString().endsWith("}")))) {
+                    try {
+                        Method getter = obj.getClass().getMethod("get" + method.substring(3, method.length()));
+                        if(getter != null && !"String".equals(getter.getReturnType().getSimpleName())) {
+                            args[i] = JsonUtils.parse(args[i].toString(), Map.class);
+                            types[i] = Map.class;
+                        } else {
+                            types[i] = args[i].getClass();
+                        }
+                    } catch (Exception e) {
+                        types[i] = args[i].getClass();
+                    }
+                } else {
+                    types[i] = args[i].getClass();
+                }
+            }
         }
         if(obj.getClass().getClassLoader() instanceof MemoryClassLoader) {
             try {
@@ -177,7 +173,15 @@ public class ReflectionUtils {
         }
 
         MethodAccess access = getMethodAccess(obj.getClass());
-
+        int i = 0;
+        for(int n = access.getMethodNames().length; i < n; ++i) {
+            if (access.getMethodNames()[i].equals(method)) {
+                if(types.length==access.getParameterTypes()[i].length &&
+                        !Arrays.equals(types, access.getParameterTypes()[i])) {
+                    types = access.getParameterTypes()[i];
+                }
+            }
+        }
         return access.invoke(obj, method, types, args);
     }
 
@@ -212,9 +216,7 @@ public class ReflectionUtils {
     }
 
     public static void setFieldValue(Class<?> clazz, Object obj, String fieldname, Object value) {
-
         fieldname = ensureFieldname(clazz, fieldname);
-
         String method = getMethodName(fieldname, "set");
         for(Method a : clazz.getDeclaredMethods()) {
             if(a.getName().equals(method)) {
@@ -233,11 +235,23 @@ public class ReflectionUtils {
                     }
                     else {
                         value = StringUtils.cast(clazz.getDeclaredField(fieldname).getGenericType(), value.toString());
+                        if(String.class.equals(value.getClass()) && !clazz.getDeclaredField(fieldname).getGenericType().getTypeName().equals(value.getClass().getTypeName())) {
+                            if(Pattern.matches("java\\.util\\.List<[^<>]+>", clazz.getDeclaredField(fieldname).getGenericType().getTypeName())) {
+                                if(((ParameterizedTypeImpl) clazz.getDeclaredField(fieldname).getGenericType()).getActualTypeArguments().length==1) {
+                                    Class<?> c = Class.forName(((ParameterizedTypeImpl) clazz.getDeclaredField(fieldname).getGenericType()).getActualTypeArguments()[0].getTypeName());
+                                    value = JsonUtils.toList((String) value, c);
+                                }
+                            } else {
+                                Class<?> c = Class.forName(((ParameterizedTypeImpl) clazz.getDeclaredField(fieldname).getGenericType()).getTypeName());
+                                value = JsonUtils.parse((String) value, c);
+                            }
+                        }
                     }
                     hasValue = true;
                 }
             }
-            catch(Exception e){}
+            catch(Exception e){
+            }
 
             if(!hasValue) {
                 try {
@@ -275,7 +289,7 @@ public class ReflectionUtils {
     }
 
     private static String ensureFieldname(Class clazz, String field) {
-        for(Field item : clazz.getDeclaredFields()) {
+        for(Field item : FieldCache.getCachedDeclaredFields(clazz)) {
             Fieldname fieldname = item.getAnnotation(Fieldname.class);
             if(fieldname != null) {
                 String value = ApplicationConfig.getInstance().get(fieldname.value());

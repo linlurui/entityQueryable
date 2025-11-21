@@ -10,18 +10,12 @@
  */
 
 
-package entity.query.core;
+package entity.query.core.lazy;
 
-import java.sql.Connection;
+import entity.query.core.lifecycle.EntityLifecycleContext;
 
-public class DBTransaction {
-    public Connection getConnection() {
-        return connection;
-    }
+public interface LazyLoader {
 
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    private Connection connection;
+    Object load(Object source, EntityLifecycleContext context) throws Exception;
 }
+

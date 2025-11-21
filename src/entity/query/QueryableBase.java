@@ -152,11 +152,28 @@ public abstract class QueryableBase<T> implements IDataActuator {
         return where(exp, values.toArray(), ", ");
     }
 
-	public <E> Where<T> where(String exp, E[] values) {
+	public <E> Where<T> where(String exp, E[]... values) {
 	    return where(exp, values, ", ");
 	}
 
-   public <E> Where<T> where(String exp, E[] values, String spliter) {
+	private void bindExpressionValues(String exp, Object[] values) {
+		if(values == null || values.length == 0) {
+			return;
+		}
+		ExpressionValueBinder.bind(getGenericType(), entityObject(), exp, values);
+	}
+
+	private Object[] mergeValues(Object value, Object... moreValues) {
+		int additional = (moreValues == null) ? 0 : moreValues.length;
+		Object[] results = new Object[1 + additional];
+		results[0] = value;
+		if(additional > 0) {
+			System.arraycopy(moreValues, 0, results, 1, additional);
+		}
+		return results;
+	}
+
+	public <E> Where<T> where(String exp, E[] values, String spliter) {
         Where<T> clause = new Where<T>();
         clause.init(getGenericType(), entityObject(), getParser(), this);
         if(values == null || values.length < 1) {
@@ -184,6 +201,11 @@ public abstract class QueryableBase<T> implements IDataActuator {
 
         return clause;
     }
+
+	public Where<T> where(String exp, Object value, Object... moreValues) {
+		bindExpressionValues(exp, mergeValues(value, moreValues));
+		return where(exp);
+	}
 
 	public Where<T> where(String exp) {
 		Where<T> clause = new Where<T>();

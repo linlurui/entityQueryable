@@ -10,18 +10,10 @@
  */
 
 
-package entity.query.core;
+package entity.query.core.lifecycle;
 
-import java.sql.Connection;
+public interface EntityLifecycleListener {
 
-public class DBTransaction {
-    public Connection getConnection() {
-        return connection;
-    }
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    private Connection connection;
+    void onEvent(EntityLifecycleEventType type, Object entity, EntityLifecycleContext context);
 }
+

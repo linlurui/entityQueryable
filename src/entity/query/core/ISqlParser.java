@@ -52,6 +52,9 @@ public interface ISqlParser {
 
 	<T> Object[] getArgs(Class<T> genericType, String sql, Object obj, Map<Integer, Blob> blobMap);
 
+	<T> PreparedSql getPreparedSql(Class<T> genericType, String exp, CommandMode cmdMode, Object obj,
+								   int skip, int top, Boolean isCount, Map<Integer, Blob> blobMap);
+
 	<T> String getInsertSql(Class<T> genericType);
 
 	<T> String getDeleteSql(Class<T> genericType);

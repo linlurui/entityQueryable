@@ -64,7 +64,7 @@ public class MysqlParser extends SqlParserBase {
 
 	@Override
 	public <T> String getSelectSql(Class<T> clazz, int skip, int top, Boolean isCount) {
-		Field[] flds = clazz.getDeclaredFields();
+		Field[] flds = entity.tool.util.FieldCache.getCachedDeclaredFields(clazz);
 		String primaryKey = "";
 		for(Field fld : flds) {
 

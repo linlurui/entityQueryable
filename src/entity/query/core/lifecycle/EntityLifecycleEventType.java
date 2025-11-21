@@ -10,18 +10,15 @@
  */
 
 
-package entity.query.core;
+package entity.query.core.lifecycle;
 
-import java.sql.Connection;
-
-public class DBTransaction {
-    public Connection getConnection() {
-        return connection;
-    }
-
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
-
-    private Connection connection;
+public enum EntityLifecycleEventType {
+    PRE_PERSIST,
+    POST_PERSIST,
+    PRE_UPDATE,
+    POST_UPDATE,
+    PRE_REMOVE,
+    POST_REMOVE,
+    POST_LOAD
 }
+

@@ -77,7 +77,7 @@ public final class DataSourceFactory {
 		DataSource ds;
 		String dsname = findDataSourceAnnotation(clazz);
 		DBConfig configAnn = clazz.getAnnotation(DBConfig.class);
-		if(StringUtils.isNotEmpty(dsname)) {
+		if(StringUtils.isNotEmpty(dsname) && !"default".equals(dsname)) {
 			ds = conf.getDataSource(dsname);
 		} else if(configAnn != null) {
 			ds = conf.getDataSource(configAnn);

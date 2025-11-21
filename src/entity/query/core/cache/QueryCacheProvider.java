@@ -10,18 +10,21 @@
  */
 
 
-package entity.query.core;
+package entity.query.core.cache;
 
-import java.sql.Connection;
+/**
+ * Minimal cache provider interface to keep dependencies optional.
+ */
+public interface QueryCacheProvider {
 
-public class DBTransaction {
-    public Connection getConnection() {
-        return connection;
-    }
+    <T> T get(String key);
 
-    public void setConnection(Connection connection) {
-        this.connection = connection;
-    }
+    void put(String key, Object value, Class<?> resultType);
 
-    private Connection connection;
+    void evict(String key);
+
+    void clear();
+
+    void trimToSize();
 }
+

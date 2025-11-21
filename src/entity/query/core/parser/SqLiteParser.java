@@ -124,6 +124,10 @@ public class SqLiteParser extends MysqlParser {
                     StringUtils.join(",", uniqueList)));
         }
 
+        if(sb.length() == 0) {
+            return "";
+        }
+
         return String.format("CREATE  TABLE [%s] (%s);", tablename, sb.substring(1));
     }
 
@@ -131,11 +135,11 @@ public class SqLiteParser extends MysqlParser {
     public <T> String getAlterTableSql(String tablename, List<ColumnInfo> columns, List<ColumnInfo> storedColumns) {
 
         if(isEmpty(tablename)) {
-            return null;
+            return "";
         }
 
         if(columns == null || columns.size() < 1) {
-            return null;
+            return "";
         }
 
         StringBuffer sb = new StringBuffer();
@@ -143,7 +147,11 @@ public class SqLiteParser extends MysqlParser {
         List<String> oldColumns = new ArrayList<>();
         String tmpTable = String.format("%s_dg_tmp", tablename);
         //sb.append("BEGIN TRANSACTION;");
-        sb.append(getCreateTableSql(tmpTable, columns));
+        String subText = getCreateTableSql(tmpTable, columns);
+        if(StringUtils.isEmpty(subText)) {
+            return "";
+        }
+        sb.append(subText);
         for(ColumnInfo col : columns) {
             if(isEmpty(col.getColumnName()) || col.getAlterMode()==AlterMode.DROP ||
                     (col.getType() == null && StringUtils.isEmpty(col.getDataType()))) {

@@ -14,6 +14,7 @@ package entity.query;
 
 import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import entity.query.core.ExpressionValueBinder;
 import entity.query.core.executor.DBExecutorAdapter;
 import entity.query.enums.CommandMode;
 import entity.query.enums.Condition;
@@ -41,6 +42,23 @@ public final class Where<T> extends QueryableAction<T> {
 		super();
 	}
 
+	private void bindValues(String exp, Object[] values) {
+		if(values == null || values.length == 0) {
+			return;
+		}
+		ExpressionValueBinder.bind(this.genericType, this.entityObject(), exp, values);
+	}
+
+	private Object[] mergeValues(Object value, Object... moreValues) {
+		int additional = (moreValues == null) ? 0 : moreValues.length;
+		Object[] results = new Object[1 + additional];
+		results[0] = value;
+		if(additional > 0) {
+			System.arraycopy(moreValues, 0, results, 1, additional);
+		}
+		return results;
+	}
+
     public <E> Where<T> where(String exp, List<E> values) {
         return where(exp, values.toArray(), ", ");
     }
@@ -53,6 +71,15 @@ public final class Where<T> extends QueryableAction<T> {
 		return where(null, exp, values, spliter);
 	}
 
+	public Where<T> where(String exp, Object value, Object... moreValues) {
+		bindValues(exp, mergeValues(value, moreValues));
+		Where<T> clause = new Where<T>();
+		clause.init(this.genericType, this.entityObject(), getParser(), this);
+		clause.getParser().addWhere(exp);
+
+		return clause;
+	}
+
    public <E> Where<T> where(Condition condition, String exp, E[] values, String spliter) {
         Where<T> clause = new Where<T>();
         clause.init(this.genericType, this.entityObject(), getParser(), this);
@@ -62,7 +89,8 @@ public final class Where<T> extends QueryableAction<T> {
         }
 
         if(args.size() > 0) {
-            exp = String.format( exp, StringUtils.join( spliter, args ) );
+            String joinedArgs = StringUtils.join( spliter, args );
+            exp = exp.replace("%s", joinedArgs);
         }
 
 		if(condition == null) {
@@ -83,6 +111,11 @@ public final class Where<T> extends QueryableAction<T> {
         return where(Condition.OR, exp, values, ", ");
     }
 
+	public Where<T> or(String exp, Object value, Object... moreValues) {
+		bindValues(exp, mergeValues(value, moreValues));
+		return where(Condition.OR, exp);
+	}
+
 	public Where<T> or(String exp) {
 		return where(Condition.OR, exp);
 	}
@@ -95,6 +128,11 @@ public final class Where<T> extends QueryableAction<T> {
 		return where(Condition.AND, exp, values, ", ");
 	}
 
+    public Where<T> and(String exp, Object value, Object... moreValues) {
+        bindValues(exp, mergeValues(value, moreValues));
+        return where(Condition.AND, exp);
+    }
+
     public Where<T> and(String exp) {
         return where(Condition.AND, exp);
     }
@@ -105,6 +143,11 @@ public final class Where<T> extends QueryableAction<T> {
 		clause.getParser().addWhere(condition, exp);
 
 		return clause;
+	}
+
+	public Where<T> where(Condition condition, String exp, Object value, Object... moreValues) {
+		bindValues(exp, mergeValues(value, moreValues));
+		return where(condition, exp);
 	}
 
 	public Select<T> select(String... exp) {
@@ -143,153 +186,70 @@ public final class Where<T> extends QueryableAction<T> {
 	}
 
 	public <T1> boolean insertTo(Class<T1> clazz) throws SQLException {
-		final Integer[] row = {0};
-		final Where queryable = this;
-		final Class<T> genericType = this.genericType;
-		final Object obj = this.entityObject();
-		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
-			try {
-				String sql = getParser().toString(genericType, "", CommandMode.InsertFrom, obj, 0, 0, false, null);
-				row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
-			} catch (Exception e) {
-				log.error(e.getMessage(), e);
-			}
-			return row[0] !=null && row[0].intValue()>0;
+		try {
+			String sql = getParser().toString(this.genericType, "", CommandMode.InsertFrom, this.entityObject(), 0, 0, false, null);
+			Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, null);
+			return row != null && row.intValue() > 0;
+		} catch (Exception e) {
+			log.error("InsertTo failed: " + e.getMessage(), e);
+			throw new SQLException("InsertTo operation failed", e);
 		}
-		ThreadUtils.onec(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					String sql = getParser().toString(genericType, "", CommandMode.InsertFrom, obj, 0, 0, false, null);
-					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
-				} catch (Exception e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		});
-
-		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public boolean delete() throws SQLException {
-		final Integer[] row = {0};
-		final Where queryable = this;
-		final Class<T> clazz = this.genericType;
-		final Object obj = this.entityObject();
-		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
-			try {
-				String sql = getParser().toString(clazz, "", CommandMode.Delete, obj, 0, 0, false, null);
-				row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
-				sql = null;
-			} catch (Exception e) {
-				log.error(e.getMessage(), e);
-			}
-			return row[0] !=null && row[0].intValue()>0;
+		try {
+			String sql = getParser().toString(this.genericType, "", CommandMode.Delete, this.entityObject(), 0, 0, false, null);
+			Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, null);
+			return row != null && row.intValue() > 0;
+		} catch (Exception e) {
+			log.error("Delete failed: " + e.getMessage(), e);
+			throw new SQLException("Delete operation failed", e);
 		}
-		ThreadUtils.onec(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					String sql = getParser().toString(clazz, "", CommandMode.Delete, obj, 0, 0, false, null);
-					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, null);
-					sql = null;
-				} catch (Exception e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		});
-
-		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public boolean update(String... exp) throws SQLException {
-		String expText = "";
+		StringBuilder expTextBuilder = new StringBuilder();
     	for (int i=0; i<exp.length; i++) {
     		if(i>0) {
-    			expText = expText + ", ";
+    			expTextBuilder.append(", ");
     		}
-    		expText = expText + DBUtils.getSqlInjText( exp[i] );
+    		expTextBuilder.append(DBUtils.getSqlInjText(exp[i]));
     	}
+		String expText = expTextBuilder.toString();
 
-		final Integer[] row = {0};
-		final Where queryable = this;
-		final Class<T> clazz = this.genericType;
-		final Object obj = this.entityObject();
-		final String finalExpText = expText;
-		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
-			try {
-				Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-				String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
-				row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
-				sql = null;
-			} catch (Exception e) {
-				log.error(e.getMessage(), e);
-			}
-			return row[0] !=null && row[0].intValue()>0;
+		try {
+			Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+			String sql = getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
+			Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
+			return row != null && row.intValue() > 0;
+		} catch (Exception e) {
+			log.error("Update failed: " + e.getMessage(), e);
+			throw new SQLException("Update operation failed", e);
 		}
-		ThreadUtils.onec(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-					String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
-					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
-					sql = null;
-				} catch (Exception e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		});
-		expText = null;
-
-		return row[0] !=null && row[0].intValue()>0;
 	}
 
 	public boolean update(Map<String, Object> map) throws SQLException {
-		String expText = "";
+		StringBuilder expTextBuilder = new StringBuilder();
 		int i = 0;
 		for (Map.Entry<String, Object> item : map.entrySet()) {
 			if(i>0) {
-				expText = expText + ", ";
+				expTextBuilder.append(", ");
 			}
-
-			expText = expText + String.format("[%s]=%s", DBUtils.getSqlInjText( item.getKey() ), DBUtils.getStringValue( item.getValue() ));
+			expTextBuilder.append("[").append(DBUtils.getSqlInjText(item.getKey()))
+			              .append("]=").append(DBUtils.getStringValue(item.getValue()));
 			i++;
 		}
+		String expText = expTextBuilder.toString();
 
-		final Integer[] row = {0};
-		final Where queryable = this;
-		final Class<T> clazz = this.genericType;
-		final Object obj = this.entityObject();
-		final String finalExpText = expText;
-		if("SQLITE".equalsIgnoreCase(this.dataSource.getDbType())) {
-			try {
-				Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-				String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
-				row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
-				sql = null;
-			} catch (Exception e) {
-				log.error(e.getMessage(), e);
-				throw new SQLException(e.getMessage(),e.getCause());
-			}
-			return row[0] !=null && row[0].intValue()>0;
+		try {
+			Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
+			String sql = getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
+			Integer row = DBExecutorAdapter.createExecutor(this, getGenericType()).execute(sql, blobMap);
+			return row != null && row.intValue() > 0;
+		} catch (Exception e) {
+			log.error("Update failed: " + e.getMessage(), e);
+			throw new SQLException("Update operation failed", e);
 		}
-		ThreadUtils.onec(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
-					String sql = getParser().toString(clazz, finalExpText, CommandMode.UpdateFrom, obj, 0, 0, false, blobMap);
-					row[0] = DBExecutorAdapter.createExecutor(queryable, getGenericType()).execute(sql, blobMap);
-					sql = null;
-				} catch (Exception e) {
-					log.error(e.getMessage(), e);
-				}
-			}
-		});
-		expText = null;
-
-		return row[0] !=null && row[0].intValue()>0;
 	}
 
     public void batchInsert(List<T> list) throws Exception {
@@ -332,13 +292,14 @@ public final class Where<T> extends QueryableAction<T> {
 	}
 
 	public Flowable<Integer> asyncUpdate(String... exp) throws Exception {
-		String expText = "";
+		StringBuilder expTextBuilder = new StringBuilder();
 		for (int i=0; i<exp.length; i++) {
 			if(i>0) {
-				expText = expText + ", ";
+				expTextBuilder.append(", ");
 			}
-			expText = expText + DBUtils.getSqlInjText( exp[i] );
+			expTextBuilder.append(DBUtils.getSqlInjText(exp[i]));
 		}
+		String expText = expTextBuilder.toString();
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
 		String sql = getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
 		Flowable<Integer> flowable = DBExecutorAdapter.createExecutor(this, getGenericType()).flowable(sql, blobMap);
@@ -347,22 +308,23 @@ public final class Where<T> extends QueryableAction<T> {
 	}
 
 	public Flowable<Integer> asyncUpdate(Map<String, Object> map) throws Exception {
-		String expText = "";
+		StringBuilder expTextBuilder = new StringBuilder();
 		int i = 0;
 		for (Map.Entry<String, Object> item : map.entrySet()) {
 			if(i>0) {
-				expText = expText + ", ";
+				expTextBuilder.append(", ");
 			}
 
 			if(item.getValue() instanceof  Number) {
-				expText = expText + String.format("%s=%s", DBUtils.getSqlInjText( item.getKey() ), DBUtils.getStringValue( item.getValue() ));
-			}
-
-			else {
-				expText = expText + String.format("%s='%s'", DBUtils.getSqlInjText( item.getKey() ), DBUtils.getStringValue( item.getValue() ));
+				expTextBuilder.append(DBUtils.getSqlInjText(item.getKey()))
+				              .append("=").append(DBUtils.getStringValue(item.getValue()));
+			} else {
+				expTextBuilder.append(DBUtils.getSqlInjText(item.getKey()))
+				              .append("='").append(DBUtils.getStringValue(item.getValue())).append("'");
 			}
 			i++;
 		}
+		String expText = expTextBuilder.toString();
 		Map<Integer, Blob> blobMap = new HashMap<Integer, Blob>();
 		String sql = getParser().toString(this.genericType, expText, CommandMode.UpdateFrom, this.entityObject(), 0, 0, false, blobMap);
 
